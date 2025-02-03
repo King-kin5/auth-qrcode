@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Code Generator</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        /* Ensure SVG can scale and is fully visible */
+        #qr-result svg {
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-6 text-center">QR Code Generator</h1>
+        
+        <form 
+            hx-post="/qr/generate"
+            hx-target="#qr-result"
+            hx-indicator="#loading"
+            class="space-y-4"
+        >
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Content</label>
+                <input
+                    type="text"
+                    name="content"
+                    required
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Size</label>
+                <input
+                    type="number"
+                    name="size"
+                    min="5"
+                    max="20"
+                    value="10"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+            </div>
+            
+            <button
+                type="submit"
+                class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
+            >
+                Generate QR Code
+            </button>
+        </form>
+        
+        <div
+            id="loading"
+            class="htmx-indicator text-center mt-4 text-gray-500 hidden"
+        >
+            Generating QR Code...
+        </div>
+        
+        <div
+            id="qr-result"
+            class="mt-6 text-center overflow-x-auto"
+        >
+            <!-- QR Code will be dynamically inserted here -->
+        </div>
+    </div>
+    
+    <script>
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.successful) {
+            try {
+                // Parse response safely
+                let response = typeof evt.detail.xhr.responseText === 'string' 
+                    ? JSON.parse(evt.detail.xhr.responseText) 
+                    : evt.detail.xhr.responseText;
+                
+                // Ensure SVG content is present
+                let svgContent = response.svg || 'QR Code Generation Failed';
+                
+                // Extensive logging for debugging
+                console.log('Full Response:', response);
+                console.log('SVG Content Length:', svgContent.length);
+                
+                // Sanitize and insert SVG
+                let sanitizedSvg = svgContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                let resultDiv = document.getElementById('qr-result');
+                resultDiv.innerHTML = svgContent; // Use raw SVG
+                
+                // Optional: Add error handling for empty/invalid SVG
+                if (svgContent.trim() === '' || !svgContent.includes('<svg')) {
+                    resultDiv.innerHTML = 'Invalid QR Code Generation';
+                }
+            } catch (error) {
+                console.error('Parsing Error:', error);
+                console.log('Raw Response:', evt.detail.xhr.responseText);
+                document.getElementById('qr-result').innerHTML = 'QR Code Generation Failed';
+            }
+        } else {
+            console.error('Request Failed', evt);
+            document.getElementById('qr-result').innerHTML = 'Request Failed';
+        }
+    });
+    </script>
+</body>
+</html>

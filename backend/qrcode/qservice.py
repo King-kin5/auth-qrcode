@@ -1,6 +1,6 @@
 #qrservice
 
-from backend.util import generate_qr_code
+from backend.qrcode.util import generate_qr_code
 
 import qrcode
 import io

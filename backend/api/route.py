@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.qservice import QRService
+from backend.qrcode.qservice import QRService
 from fastapi import Form
 
 router = APIRouter()

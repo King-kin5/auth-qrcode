@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from backend import route  # Importing the router from the backend package
+from backend.api import route  # Importing the router from the backend package
 
 app = FastAPI(title="QR Code Generator")
 

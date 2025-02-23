@@ -77,8 +77,11 @@ async def authentication_middleware(request: Request, call_next: RequestResponse
         # Health check and metrics
         re.compile(r"^/(health|metrics|status)$"),
         re.compile(r"^/admin(?!/login).*$"),
+        re.compile(r"^/admin/login$"),
+        #re.compile(r"^/admin/dashboard$"),
         # Static files
         re.compile(r"^/static/.*$"),
+        re.compile(r"^/favicon\.ico$"),
         # Public student verification
         re.compile(r"^/api/v1/student/verify/[^/]+$")
     ]
@@ -121,78 +124,59 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
     Additional security checks for admin routes
     Verifies admin permissions, IP whitelisting, and additional security headers
     """
-    # Only apply to admin routes, but exclude the login endpoint
-    admin_path_patterns = [
-        re.compile(r"^/api/v1/admin(?!/login).*$"),
-        re.compile(r"^/admin(?!/login).*$"),
-        re.compile(r"^/admin(?!/(login|home)$).*"),
+    # Static file and initial page load exclusions
+    excluded_patterns = [
+        re.compile(r"^/admin/login$"),
+        re.compile(r"^/admin/dashboard$"),  # Allow initial dashboard page load
+        re.compile(r"^/static/.*$"),
     ]
     
-    is_admin_route = any(pattern.match(request.url.path) for pattern in admin_path_patterns)
+    # Check if path should be excluded
+    if any(pattern.match(request.url.path) for pattern in excluded_patterns):
+        return await call_next(request)
     
-    if is_admin_route:
+    # Admin API patterns that require authentication
+    admin_api_patterns = [
+        re.compile(r"^/api/v1/admin(?!/login).*$"),
+    ]
+    
+    # Protected admin page patterns
+    protected_admin_patterns = [
+        re.compile(r"^/admin/.*$"),  # All other admin routes need auth
+    ]
+    
+    is_admin_api = any(pattern.match(request.url.path) for pattern in admin_api_patterns)
+    is_protected_admin = any(pattern.match(request.url.path) for pattern in protected_admin_patterns)
+    
+    if is_admin_api or is_protected_admin:
         try:
-            # Verify admin IP whitelist
-            client_ip = request.client.host if request.client else 'unknown'
-            admin_ip_whitelist = getattr(request.app.state, 'admin_ip_whitelist', [])
-            
-            if not is_whitelisted_ip(client_ip, admin_ip_whitelist):
-                logger.warning(f"Admin access attempt from non-whitelisted IP: {client_ip}")
-                raise HTTPException(status_code=403, detail="Admin access denied: IP not allowed")
-            
-            # Check for required security headers for sensitive admin operations
-            sensitive_admin_operations = [
-                re.compile(r"^/api/v1/admin/(users|permissions|settings)/.*$"),
-                re.compile(r"^/admin/(system|security)/.*$")
-            ]
-            
-            is_sensitive_operation = any(
-                pattern.match(request.url.path) 
-                for pattern in sensitive_admin_operations
-            )
-            
-            if is_sensitive_operation and not all(
-                header in request.headers 
-                for header in ['X-Admin-Token', 'X-Request-ID']
-            ):
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Missing required security headers for admin operation"
-                )
-            
             # Verify admin permission level if user is authenticated
-            if hasattr(request.state, 'user') and request.state.user:
-                user_id = request.state.user.get('sub')
-                if user_id:
-                    # Get DB session from request state
-                    db = request.app.state.db
-                    admin_service = AdminService(db)
-                    
-                    admin_user = admin_service.get_admin_by_id(uuid.UUID(user_id))
-                    if not admin_user or not admin_user.is_admin:
-                        logger.warning(f"Non-admin user {user_id} attempted to access admin route")
-                        raise HTTPException(
-                            status_code=403,
-                            detail="Admin privileges required for this operation"
-                        )
-                    
-                    # Set the actual admin user model in request state for convenience
-                    request.state.admin_user = admin_user
-                    
-                    # For extra security, check if admin account is active
-                    if not admin_user.is_active:
-                        logger.warning(f"Inactive admin {user_id} attempted to access admin route")
-                        raise HTTPException(
-                            status_code=403, 
-                            detail="Admin account is inactive"
-                        )
-                    
-                    # Log admin access
-                    logger.info(f"Admin access: {admin_user.email} - {request.url.path}")
-            else:
-                # If we reach here on an admin route and no user is authenticated, deny access
+            auth_header = request.headers.get("Authorization")
+            if not auth_header:
                 raise HTTPException(status_code=401, detail="Authentication required for admin access")
-        
+            
+            # Validate token
+            token = auth_header.split(" ")[-1] if "Bearer" in auth_header else auth_header
+            decoded_token = verify_access_token(token)
+            if not decoded_token:
+                raise HTTPException(status_code=401, detail="Invalid or expired token")
+            
+            # Check admin privileges
+            if decoded_token.get('sub'):
+                db = request.app.state.db
+                admin_service = AdminService(db)
+                admin_user = admin_service.get_admin_by_id(uuid.UUID(decoded_token['sub']))
+                
+                if not admin_user or not admin_user.is_admin:
+                    raise HTTPException(status_code=403, detail="Admin privileges required")
+                
+                if not admin_user.is_active:
+                    raise HTTPException(status_code=403, detail="Admin account is inactive")
+                
+                # Set admin user in request state
+                request.state.admin_user = admin_user
+                request.state.user = decoded_token
+            
         except HTTPException:
             raise
         except Exception as e:
@@ -201,7 +185,6 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
             raise HTTPException(status_code=500, detail="Internal security error")
     
     return await call_next(request)
-
 
 class PasswordChangeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

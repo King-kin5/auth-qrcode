@@ -80,8 +80,8 @@ def create_application() -> FastAPI:
     # Middleware stack - order matters (executes bottom to top)
     app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
     app.add_middleware(PasswordChangeMiddleware)
-    app.add_middleware(BaseHTTPMiddleware, dispatch=authentication_middleware)
-    app.add_middleware(BaseHTTPMiddleware, dispatch=admin_security_middleware)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=authentication_middleware)  # Auth first
+    app.add_middleware(BaseHTTPMiddleware, dispatch=admin_security_middleware)  # Then admin checks
     
     # Frontend paths setup
     frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
@@ -101,12 +101,15 @@ def create_application() -> FastAPI:
         admin_file = os.path.join(frontend_path, "admin_login_page.html")
         return FileResponse(admin_file)
     
-    @app.get("/admin/dashboard", include_in_schema=False)
+    @app.get("/admin_dashboard.html", include_in_schema=False)
     async def get_admin_dashboard():
         """Serve admin dashboard page"""
         dashboard_file = os.path.join(frontend_path, "admin_dashboard.html")
-        return FileResponse(dashboard_file)
-    
+        return FileResponse(
+            dashboard_file,
+            headers={"Content-Type": "text/html; charset=utf-8"}
+        )
+       
     @app.get("/admin/register-student", include_in_schema=False)
     async def get_register_student():
         """Serve student registration page"""

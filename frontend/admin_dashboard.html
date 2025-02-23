@@ -1,135 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100">
-    <div class="min-h-screen flex">
-        <!-- Sidebar -->
-        <div class="bg-indigo-800 text-white w-64 py-6 flex flex-col">
-            <div class="px-6 mb-8">
-                <h1 class="text-2xl font-bold">Admin Panel</h1>
-            </div>
-            <nav class="flex-1">
-                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
-                    <i class="fas fa-home w-6"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
-                    <i class="fas fa-user-plus w-6"></i>
-                    <span>Register Student</span>
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
-                    <i class="fas fa-users w-6"></i>
-                    <span>View All Students</span>
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
-                    <i class="fas fa-user-shield w-6"></i>
-                    <span>Create Admin</span>
-                </a>
-                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
-                    <i class="fas fa-search w-6"></i>
-                    <span>Search Students</span>
-                </a>
-            </nav>
-            <div class="px-6 pt-6">
-                <button id="logoutBtn" class="w-full flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md transition-colors">
-                    <i class="fas fa-sign-out-alt w-6"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col">
-            <!-- Top Bar -->
-            <div class="bg-white shadow-sm p-4">
-                <div class="flex items-center justify-between">
-                    <h2 id="pageTitle" class="text-2xl font-semibold">Dashboard</h2>
-                    <div id="adminInfo" class="flex items-center">
-                        <span class="mr-2">Admin</span>
-                        <i class="fas fa-user-circle text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Content Area -->
-            <div id="mainContent" class="flex-1 p-6">
-                <!-- Dynamic content will be loaded here -->
-            </div>
-        </div>
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <div class="bg-indigo-800 text-white w-64 py-6 flex flex-col">
+      <div class="px-6 mb-8">
+        <h1 class="text-2xl font-bold">Admin Panel</h1>
+      </div>
+      <nav class="flex-1">
+        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
+          <i class="fas fa-home w-6"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
+          <i class="fas fa-user-plus w-6"></i>
+          <span>Register Student</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
+          <i class="fas fa-users w-6"></i>
+          <span>View All Students</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
+          <i class="fas fa-user-shield w-6"></i>
+          <span>Create Admin</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
+          <i class="fas fa-search w-6"></i>
+          <span>Search Students</span>
+        </a>
+      </nav>
+      <div class="px-6 pt-6">
+        <button id="logoutBtn" class="w-full flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+          <i class="fas fa-sign-out-alt w-6"></i>
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
 
-    <script>
-        // Check for authentication
-        $(document).ready(function() {
-            const token = localStorage.getItem('adminToken');
-            if (!token) {
-                window.location.href = '/admin_login_page';
-                return;
-            }
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col">
+      <!-- Top Bar -->
+      <div class="bg-white shadow-sm p-4">
+        <div class="flex items-center justify-between">
+          <h2 id="pageTitle" class="text-2xl font-semibold">Dashboard</h2>
+          <div id="adminInfo" class="flex items-center">
+            <span class="mr-2" id="adminEmail"></span>
+            <i class="fas fa-user-circle text-2xl"></i>
+          </div>
+        </div>
+      </div>
 
-            // Handle navigation
-            $('nav a').click(function(e) {
-                e.preventDefault();
-                const page = $(this).data('page');
-                loadPage(page);
-            });
+      <!-- Content Area -->
+      <div id="mainContent" class="flex-1 p-6">
+        <!-- Dynamic content will be loaded here -->
+      </div>
+    </div>
+  </div>
 
-            // Handle logout
-            $('#logoutBtn').click(function() {
-                localStorage.removeItem('adminToken');
-                window.location.href = '/admin_login_page';
-            });
+  <script>
+    // Check authentication on page load
+    function checkAuth() {
+      const token = localStorage.getItem('adminToken');
+      console.log('Stored Token:', token);
+      if (!token) {
+        window.location.href = '/admin/login';
+        return false;
+      }
+      return true;
+    }
 
-            // Load default page
-            loadPage('dashboard');
+    // Setup AJAX defaults with error handling
+    function setupAjaxDefaults() {
+      $.ajaxSetup({
+        beforeSend: function(xhr) {
+          const token = localStorage.getItem('adminToken');
+          if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          }
+        },
+        error: function(xhr, status, error) {
+          if (xhr.status === 401 || xhr.status === 403) {
+            // Clear token and redirect to login on auth errors
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+          }
+        }
+      });
+    }
+
+    // Verify admin session
+    async function verifySession() {
+      try {
+        const response = await $.ajax({
+          url: '/api/v1/admin/me',
+          method: 'GET'
         });
+        $('#adminEmail').text(response.email);
+        return true;
+      } catch (error) {
+        console.error('Session verification failed:', error);
+        return false;
+      }
+    }
 
-        function loadPage(page) {
-            const token = localStorage.getItem('adminToken');
-            $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
-            
-            switch(page) {
-                case 'register':
-                    loadRegisterForm();
-                    break;
-                case 'view-all':
-                    loadAllStudents();
-                    break;
-                // Add other cases for different pages
-            }
-        }
+    $(document).ready(async function() {
+      if (!checkAuth()) return;
+      
+      setupAjaxDefaults();
+      
+      // Verify session before showing dashboard
+      if (!await verifySession()) {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin/login';
+        return;
+      }
 
-        function loadRegisterForm() {
-            $('#mainContent').load('/student_registration.html');
-        }
+      // Handle navigation
+      $('nav a').click(function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        loadPage(page);
+      });
 
-        function loadAllStudents() {
-            const token = localStorage.getItem('adminToken');
-            $.ajax({
-                url: '/api/v1/students',
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                success: function(students) {
-                    displayStudents(students);
-                },
-                error: function(xhr) {
-                    console.error('Failed to load students:', xhr);
-                }
-            });
+      // Handle logout
+      $('#logoutBtn').click(async function() {
+        try {
+          await $.ajax({
+            url: '/api/v1/admin/logout',
+            method: 'POST'
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
         }
+      });
 
-        function displayStudents(students) {
-            // Implementation for displaying students list
-        }
-    </script>
+      // Load default page
+      loadPage('dashboard');
+    });
+
+    function loadPage(page) {
+      if (!checkAuth()) return;
+      
+      $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
+
+      switch (page) {
+        case 'dashboard':
+          loadDashboard();
+          break;
+        case 'register':
+          loadRegisterForm();
+          break;
+        case 'view-all':
+          loadAllStudents();
+          break;
+        case 'create-admin':
+          loadCreateAdmin();
+          break;
+        case 'search':
+          loadSearchForm();
+          break;
+      }
+    }
+
+    // Page loading functions with proper error handling
+    async function loadDashboard() {
+      try {
+        const response = await $.ajax({
+          url: '/api/v1/admin/dashboard-stats',
+          method: 'GET'
+        });
+        $('#mainContent').html(`
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+              <h3 class="text-xl font-semibold mb-2">Total Students</h3>
+              <p class="text-3xl">${response.totalStudents || 0}</p>
+            </div>
+          </div>
+        `);
+      } catch (error) {
+        $('#mainContent').html('<div class="text-red-600">Error loading dashboard data</div>');
+      }
+    }
+
+    // Implement other page loading functions similarly...
+    function loadRegisterForm() {
+      $('#mainContent').html('<h3>Register Student Form</h3>');
+    }
+
+    function loadAllStudents() {
+      $('#mainContent').html('<h3>All Students List</h3>');
+    }
+
+    function loadCreateAdmin() {
+      $('#mainContent').html('<h3>Create Admin Form</h3>');
+    }
+
+    function loadSearchForm() {
+      $('#mainContent').html('<h3>Search Students</h3>');
+    }
+  </script>
 </body>
 </html>

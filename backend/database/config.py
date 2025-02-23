@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 from sqlalchemy_utils import database_exists, create_database
 import logging
-from src.core.config import settings
+from backend.security.config import settings
 
 logger = logging.getLogger(__name__)
 

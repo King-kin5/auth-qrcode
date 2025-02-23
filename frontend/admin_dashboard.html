@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <div class="bg-indigo-800 text-white w-64 py-6 flex flex-col">
+            <div class="px-6 mb-8">
+                <h1 class="text-2xl font-bold">Admin Panel</h1>
+            </div>
+            <nav class="flex-1">
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
+                    <i class="fas fa-home w-6"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
+                    <i class="fas fa-user-plus w-6"></i>
+                    <span>Register Student</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
+                    <i class="fas fa-users w-6"></i>
+                    <span>View All Students</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
+                    <i class="fas fa-user-shield w-6"></i>
+                    <span>Create Admin</span>
+                </a>
+                <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
+                    <i class="fas fa-search w-6"></i>
+                    <span>Search Students</span>
+                </a>
+            </nav>
+            <div class="px-6 pt-6">
+                <button id="logoutBtn" class="w-full flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md transition-colors">
+                    <i class="fas fa-sign-out-alt w-6"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Top Bar -->
+            <div class="bg-white shadow-sm p-4">
+                <div class="flex items-center justify-between">
+                    <h2 id="pageTitle" class="text-2xl font-semibold">Dashboard</h2>
+                    <div id="adminInfo" class="flex items-center">
+                        <span class="mr-2">Admin</span>
+                        <i class="fas fa-user-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div id="mainContent" class="flex-1 p-6">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check for authentication
+        $(document).ready(function() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/admin_login_page';
+                return;
+            }
+
+            // Handle navigation
+            $('nav a').click(function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                loadPage(page);
+            });
+
+            // Handle logout
+            $('#logoutBtn').click(function() {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin_login_page';
+            });
+
+            // Load default page
+            loadPage('dashboard');
+        });
+
+        function loadPage(page) {
+            const token = localStorage.getItem('adminToken');
+            $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
+            
+            switch(page) {
+                case 'register':
+                    loadRegisterForm();
+                    break;
+                case 'view-all':
+                    loadAllStudents();
+                    break;
+                // Add other cases for different pages
+            }
+        }
+
+        function loadRegisterForm() {
+            $('#mainContent').load('/student_registration.html');
+        }
+
+        function loadAllStudents() {
+            const token = localStorage.getItem('adminToken');
+            $.ajax({
+                url: '/api/v1/students',
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                success: function(students) {
+                    displayStudents(students);
+                },
+                error: function(xhr) {
+                    console.error('Failed to load students:', xhr);
+                }
+            });
+        }
+
+        function displayStudents(students) {
+            // Implementation for displaying students list
+        }
+    </script>
+</body>
+</html>

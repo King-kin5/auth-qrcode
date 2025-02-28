@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -73,11 +74,24 @@ async def create_admin(
     return new_admin
 
 @router.get("/me", response_model=AdminResponse)
-async def get_current_admin_info(
-    current_admin: Admin = Depends(get_current_admin)
-) -> Any:
-    """Get current admin user information"""
-    return current_admin
+async def get_me(
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_admin)
+):
+    """
+    Retrieve current admin user information
+    """
+    try:
+        # The current_user is already the Admin object from get_current_admin dependency
+        # No need to extract 'sub' or fetch the admin again
+        if not current_user.is_active:
+            raise HTTPException(status_code=403, detail="Admin account is inactive")
+            
+        # Return the admin user data directly
+        return current_user
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.post("/login", response_model=Token)
 async def login(

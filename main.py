@@ -101,7 +101,7 @@ def create_application() -> FastAPI:
         admin_file = os.path.join(frontend_path, "admin_login_page.html")
         return FileResponse(admin_file)
     
-    @app.get("/admin_dashboard.html", include_in_schema=False)
+    @app.get("/admin/dashboard", include_in_schema=False)
     async def get_admin_dashboard():
         """Serve admin dashboard page"""
         dashboard_file = os.path.join(frontend_path, "admin_dashboard.html")
@@ -168,7 +168,6 @@ async def shutdown_event():
     except Exception as e:
         logger.error(f"Application shutdown failed: {e}")
         raise
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -119,6 +119,7 @@ async def authentication_middleware(request: Request, call_next: RequestResponse
         logger.error(f"Authentication middleware error: {e}")
         raise
 
+# Update the admin_security_middleware function in middleware.py
 async def admin_security_middleware(request: Request, call_next: RequestResponseEndpoint):
     """
     Additional security checks for admin routes
@@ -161,21 +162,29 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
             if not decoded_token:
                 raise HTTPException(status_code=401, detail="Invalid or expired token")
             
-            # Check admin privileges
+            # Check admin privileges using dependency-based approach
             if decoded_token.get('sub'):
-                db = request.app.state.db
-                admin_service = AdminService(db)
-                admin_user = admin_service.get_admin_by_id(uuid.UUID(decoded_token['sub']))
+                # Import here to avoid circular imports
+                from backend.database.base import SessionLocal
                 
-                if not admin_user or not admin_user.is_admin:
-                    raise HTTPException(status_code=403, detail="Admin privileges required")
-                
-                if not admin_user.is_active:
-                    raise HTTPException(status_code=403, detail="Admin account is inactive")
-                
-                # Set admin user in request state
-                request.state.admin_user = admin_user
-                request.state.user = decoded_token
+                # Create a new session for this request
+                db = SessionLocal()
+                try:
+                    admin_service = AdminService(db)
+                    admin_user = admin_service.get_admin_by_id(uuid.UUID(decoded_token['sub']))
+                    
+                    if not admin_user or not admin_user.is_admin:
+                        raise HTTPException(status_code=403, detail="Admin privileges required")
+                    
+                    if not admin_user.is_active:
+                        raise HTTPException(status_code=403, detail="Admin account is inactive")
+                    
+                    # Set admin user in request state
+                    request.state.admin_user = admin_user
+                    request.state.user = decoded_token
+                finally:
+                    # Always close the session when done
+                    db.close()
             
         except HTTPException:
             raise
@@ -185,7 +194,7 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
             raise HTTPException(status_code=500, detail="Internal security error")
     
     return await call_next(request)
-
+# In middleware.py - update the PasswordChangeMiddleware class
 class PasswordChangeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Skip middleware for these endpoints
@@ -210,19 +219,27 @@ class PasswordChangeMiddleware(BaseHTTPMiddleware):
         
         if user and 'sub' in user:
             try:
-                # Get DB session from request state
-                db = request.app.state.db
-                admin_service = AdminService(db)
+                # Import database session here
+                from backend.database.base import SessionLocal
                 
-                admin_user = admin_service.get_admin_by_id(uuid.UUID(user['sub']))
-                if admin_user and admin_user.requires_password_change:
-                    raise HTTPException(
-                        status_code=403,
-                        detail={
-                            "message": "Password change required",
-                            "code": "PASSWORD_CHANGE_REQUIRED"
-                        }
-                    )
+                # Create a new session for this request
+                db = SessionLocal()
+                try:
+                    admin_service = AdminService(db)
+                    
+                    admin_user = admin_service.get_admin_by_id(uuid.UUID(user['sub']))
+                    # Check if attribute exists before accessing it
+                    if admin_user and hasattr(admin_user, 'requires_password_change') and admin_user.requires_password_change:
+                        raise HTTPException(
+                            status_code=403,
+                            detail={
+                                "message": "Password change required",
+                                "code": "PASSWORD_CHANGE_REQUIRED"
+                            }
+                        )
+                finally:
+                    # Always close the session when done
+                    db.close()
             except HTTPException:
                 raise
             except Exception as e:

@@ -30,6 +30,7 @@ class Admin(Base, AdminUserMixin):
     tier = Column(SQLAEnum(Tier), default=Tier.ADMIN)
     status = Column(SQLAEnum(Status), default=Status.ACTIVE)
     last_login = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.now)  
 
     # Define a one-to-many relationship with AdminAuditLog.
     audit_logs = relationship("AdminAuditLog", back_populates="admin", cascade="all, delete-orphan")

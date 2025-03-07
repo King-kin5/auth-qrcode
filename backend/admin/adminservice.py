@@ -21,17 +21,17 @@ class AdminStudentService:
 
     def register_student(self, data: Dict[str, Any], admin_user: Admin) -> Student:
         """
-        Register a new student - only accessible by admin users
+        Register a new student - only accessible by admin users.
         
         Args:
-            data: Student data dictionary
-            admin_user: The admin user performing the registration
+            data: Student data dictionary.
+            admin_user: The admin user performing the registration.
             
         Returns:
-            Student: The created student object
+            Student: The created student object.
             
         Raises:
-            HTTPException: If admin permissions are insufficient or operation fails
+            HTTPException: If admin permissions are insufficient or operation fails.
         """
         # Verify admin privileges
         if not admin_user.is_admin:
@@ -42,7 +42,7 @@ class AdminStudentService:
             raise HTTPException(status_code=403, detail="Admin account must be active")
         
         try:
-            # Check if student with exact same name
+            # Check if a student with the exact same name already exists
             existing_student = self.db.query(Student).filter(
                 Student.name == data['name']
             ).first()
@@ -50,10 +50,10 @@ class AdminStudentService:
             if existing_student:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Student '{data['name']}' is already registered  "
+                    detail=f"Student '{data['name']}' is already registered"
                 )
             
-            # Create new student with auto-incrementing ID
+            # Create a new student
             new_student = Student(
                 name=data['name'],
                 course=data['course'],
@@ -85,7 +85,6 @@ class AdminStudentService:
             return new_student
             
         except HTTPException:
-            # Re-raise HTTP exceptions as-is
             raise
         except SQLAlchemyError as e:
             self.db.rollback()
@@ -97,11 +96,11 @@ class AdminStudentService:
             raise HTTPException(status_code=500, detail="An error occurred during registration")
 
     def get_all_students(self) -> List[Student]:
-        """Get all registered students"""
+        """Get all registered students."""
         return self.db.query(Student).all()
     
     def get_student_by_id(self, student_id: int) -> Optional[Student]:
-        """Get student by ID"""
+        """Get a student by ID."""
         student = self.db.query(Student).filter(Student.id == student_id).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
@@ -115,7 +114,7 @@ class AdminStudentService:
         entity_id: str,
         details: dict
     ) -> None:
-        """Create an audit log entry for admin actions"""
+        """Create an audit log entry for admin actions."""
         try:
             audit_log = AdminAuditLog(
                 admin_id=admin_id,
@@ -130,4 +129,126 @@ class AdminStudentService:
             self.logger.info(f"Created audit log for action: {action}")
         except SQLAlchemyError as e:
             self.logger.error(f"Failed to create audit log: {str(e)}")
-            # Don't rollback the main transaction if audit logging fails
+            # Do not rollback the main transaction if audit logging fails.
+
+    def delete_student(self, student_id: int, admin_user: Admin) -> bool:
+        """
+        Delete a student record.
+        
+        Args:
+            student_id: ID of the student to delete.
+            admin_user: Admin performing the deletion.
+            
+        Returns:
+            bool: True if deletion was successful.
+            
+        Raises:
+            HTTPException: If the student is not found or the operation fails.
+        """
+        # Verify admin privileges
+        if not admin_user.is_admin:
+            raise HTTPException(status_code=403, detail="Admin privileges required")
+            
+        # Find the student
+        student = self.db.query(Student).filter(Student.id == student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+            
+        try:
+            # Store student info for audit log
+            student_name = student.name
+            
+            # Delete the student
+            self.db.delete(student)
+            self.db.commit()
+            
+            # Create audit log entry
+            self._create_audit_log(
+                admin_user.id,
+                "STUDENT_DELETED",
+                "STUDENT",
+                str(student_id),
+                {
+                    "name": student_name,
+                    "deleted_at": datetime.now().isoformat(),
+                    "deleted_by": admin_user.email
+                }
+            )
+            
+            self.logger.info(f"Admin {admin_user.email} deleted student ID {student_id}")
+            return True
+            
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            self.logger.error(f"Database error deleting student: {str(e)}")
+            raise HTTPException(status_code=500, detail="Database error during deletion")
+        except Exception as e:
+            self.db.rollback()
+            self.logger.error(f"Unexpected error deleting student: {str(e)}")
+            raise HTTPException(status_code=500, detail="An error occurred during deletion")
+
+    def update_student(self, student_id: int, data: Dict[str, Any], admin_user: Admin) -> Student:
+        """
+        Update a student record.
+        
+        Args:
+            student_id: ID of the student to update.
+            data: Dictionary with fields to update.
+            admin_user: Admin performing the update.
+            
+        Returns:
+            Student: The updated student object.
+            
+        Raises:
+            HTTPException: If the student is not found or the operation fails.
+        """
+        # Verify admin privileges
+        if not admin_user.is_admin:
+            raise HTTPException(status_code=403, detail="Admin privileges required")
+            
+        # Find the student
+        student = self.db.query(Student).filter(Student.id == student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+            
+        try:
+            # Store original data for audit log
+            original_data = {
+                "name": student.name,
+                "course": student.course,
+                "level": student.level,
+                "section": student.section
+            }
+            
+            # Update allowed fields
+            for field, value in data.items():
+                if field in ["name", "course", "level", "section", "qr_code"]:
+                    setattr(student, field, value)
+                    
+            self.db.commit()
+            self.db.refresh(student)
+            
+            # Create audit log entry
+            self._create_audit_log(
+                admin_user.id,
+                "STUDENT_UPDATED",
+                "STUDENT",
+                str(student_id),
+                {
+                    "original_data": original_data,
+                    "updated_data": data,
+                    "updated_at": datetime.now().isoformat()
+                }
+            )
+            
+            self.logger.info(f"Admin {admin_user.email} updated student ID {student_id}")
+            return student
+            
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            self.logger.error(f"Database error updating student: {str(e)}")
+            raise HTTPException(status_code=500, detail="Database error during update")
+        except Exception as e:
+            self.db.rollback()
+            self.logger.error(f"Unexpected error updating student: {str(e)}")
+            raise HTTPException(status_code=500, detail="An error occurred during update")

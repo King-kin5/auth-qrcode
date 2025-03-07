@@ -128,7 +128,9 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
     # Static file and initial page load exclusions
     excluded_patterns = [
         re.compile(r"^/admin/login$"),
-        re.compile(r"^/admin/dashboard$"),  # Allow initial dashboard page load
+        re.compile(r"^/admin/dashboard$"),
+        re.compile(r"^/admin/register-student$"),
+        re.compile(r"^/admin/view-students"),
         re.compile(r"^/static/.*$"),
     ]
     

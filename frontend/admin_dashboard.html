@@ -6,7 +6,7 @@
   <title>Admin Dashboard</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body class="bg-gray-100">
   <div class="min-h-screen flex">
@@ -16,23 +16,23 @@
         <h1 class="text-2xl font-bold">Admin Panel</h1>
       </div>
       <nav class="flex-1">
-        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
+        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
           <i class="fas fa-home w-6"></i>
           <span>Dashboard</span>
         </a>
-        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
+        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
           <i class="fas fa-user-plus w-6"></i>
           <span>Register Student</span>
         </a>
-        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
+        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
           <i class="fas fa-users w-6"></i>
           <span>View All Students</span>
         </a>
-        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
+        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
           <i class="fas fa-user-shield w-6"></i>
           <span>Create Admin</span>
         </a>
-        <a href="#" class="flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
+        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
           <i class="fas fa-search w-6"></i>
           <span>Search Students</span>
         </a>
@@ -48,28 +48,27 @@
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col">
       <!-- Top Bar -->
-      <div class="bg-white shadow-sm p-4">
-        <div class="flex items-center justify-between">
-          <h2 id="pageTitle" class="text-2xl font-semibold">Dashboard</h2>
-          <div id="adminInfo" class="flex items-center">
-            <span class="mr-2" id="adminEmail"></span>
-            <i class="fas fa-user-circle text-2xl"></i>
-          </div>
+      <div class="bg-white shadow p-4 flex justify-between items-center">
+        <h2 id="pageTitle" class="text-2xl font-semibold">Dashboard</h2>
+        <div id="adminInfo" class="flex items-center">
+          <span id="adminEmail" class="mr-2"></span>
+          <i class="fas fa-user-circle text-2xl"></i>
         </div>
       </div>
 
-      <!-- Content Area -->
-      <div id="mainContent" class="flex-1 p-6">
-        <!-- Dynamic content will be loaded here -->
+      <!-- Dynamic Content -->
+      <div id="mainContent" class="p-6 flex-1">
+        <!-- Content loads here -->
       </div>
     </div>
   </div>
 
   <script>
-    // Check authentication on page load
+    /*====================================
+      Authentication & AJAX Setup
+    ====================================*/
     function checkAuth() {
       const token = localStorage.getItem('adminToken');
-      console.log('Stored Token:', token);
       if (!token) {
         window.location.href = '/admin/login';
         return false;
@@ -77,8 +76,7 @@
       return true;
     }
 
-    // Setup AJAX defaults with error handling
-    function setupAjaxDefaults() {
+    function setupAjax() {
       $.ajaxSetup({
         beforeSend: function(xhr) {
           const token = localStorage.getItem('adminToken');
@@ -86,9 +84,8 @@
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
           }
         },
-        error: function(xhr, status, error) {
+        error: function(xhr) {
           if (xhr.status === 401 || xhr.status === 403) {
-            // Clear token and redirect to login on auth errors
             localStorage.removeItem('adminToken');
             window.location.href = '/admin/login';
           }
@@ -96,7 +93,6 @@
       });
     }
 
-    // Verify admin session
     async function verifySession() {
       try {
         const response = await $.ajax({
@@ -106,109 +102,527 @@
         $('#adminEmail').text(response.email);
         return true;
       } catch (error) {
-        console.error('Session verification failed:', error);
+        console.error("Session verification failed:", error);
         return false;
       }
     }
 
+    /*====================================
+         Page Navigation & Loader
+    ====================================*/
+    function loadPage(page) {
+      if (!checkAuth()) return;
+      $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
+      switch (page) {
+        case 'dashboard': loadDashboard(); break;
+        case 'register': loadRegisterForm(); break;
+        case 'view-all': loadAllStudents(); break;
+        case 'create-admin': loadCreateAdmin(); break;
+        case 'search': loadSearchForm(); break;
+        default: loadDashboard();
+      }
+    }
+
+    /*====================================
+                   Dashboard
+    ====================================*/
+    async function loadDashboard() {
+      try {
+        const stats = await $.ajax({
+          url: '/api/v1/admin/dashboard-stats',
+          method: 'GET'
+        });
+        $('#mainContent').html(`
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded shadow">
+              <h3 class="text-xl font-bold">Total Students</h3>
+              <p class="text-3xl">${stats.totalStudents || 0}</p>
+            </div>
+            <!-- Additional stats cards can be added here -->
+          </div>
+        `);
+      } catch (error) {
+        $('#mainContent').html(`<div class="text-red-500">Error loading dashboard data.</div>`);
+      }
+    }
+
+    /*====================================
+               Student Registration
+    ====================================*/
+    function loadRegisterForm() {
+      $('#mainContent').html(`
+        <div id="registrationSection">
+          <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+            <h2 class="text-2xl font-bold mb-4">Register New Student</h2>
+            <form id="studentRegistrationForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium">Full Name</label>
+                <input type="text" id="studentName" class="w-full p-2 border rounded" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Course</label>
+                <select id="course" class="w-full p-2 border rounded" required>
+                  <option value="" disabled selected>Select Course</option>
+                  <option value="BSIT">BS Information Technology</option>
+                  <option value="BSCS">BS Computer Science</option>
+                  <option value="BSIS">BS Information Systems</option>
+                  <option value="BSCE">BS Computer Engineering</option>
+                  <option value="BSECE">BS Electronics Engineering</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Year Level</label>
+                <select id="level" class="w-full p-2 border rounded" required>
+                  <option value="" disabled selected>Select Year Level</option>
+                  <option value="1">First Year</option>
+                  <option value="2">Second Year</option>
+                  <option value="3">Third Year</option>
+                  <option value="4">Fourth Year</option>
+                  <option value="5">Fifth Year</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Section</label>
+                <input type="text" id="section" class="w-full p-2 border rounded" placeholder="e.g., A, B, C" required>
+              </div>
+              <div class="flex justify-end space-x-2">
+                <button type="button" id="clearFormBtn" class="px-4 py-2 bg-gray-300 rounded">Clear</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+                  <i class="fas fa-user-plus mr-1"></i> Register
+                </button>
+              </div>
+            </form>
+            <div id="statusMessages" class="mt-4 hidden"></div>
+          </div>
+        </div>
+        <div id="qrCodeSection" class="bg-white p-6 rounded shadow hidden">
+          <div class="text-center">
+            <h2 class="text-2xl font-bold text-green-600">Registration Successful!</h2>
+            <p class="mb-4">Student details:</p>
+            <table class="mx-auto text-left">
+              <tr><td class="font-bold">ID:</td><td id="studentIdDisplay"></td></tr>
+              <tr><td class="font-bold">Name:</td><td id="studentNameDisplay"></td></tr>
+              <tr><td class="font-bold">Course:</td><td id="studentCourseDisplay"></td></tr>
+              <tr><td class="font-bold">Year:</td><td id="studentLevelDisplay"></td></tr>
+              <tr><td class="font-bold">Section:</td><td id="studentSectionDisplay"></td></tr>
+            </table>
+            <div id="qrCodeDisplay" class="mt-4 flex justify-center"></div>
+            <div class="mt-4 space-x-2">
+              <button id="printQrBtn" class="px-4 py-2 bg-indigo-600 text-white rounded">Print QR</button>
+              <button id="registerAnotherBtn" class="px-4 py-2 bg-gray-600 text-white rounded">Register Another</button>
+            </div>
+          </div>
+        </div>
+      `);
+      initRegisterFormHandlers();
+    }
+
+    function initRegisterFormHandlers() {
+      $('#clearFormBtn').click(function() {
+        $('#studentRegistrationForm')[0].reset();
+        $('#statusMessages').addClass('hidden').empty();
+      });
+      $('#studentRegistrationForm').on('submit', async function(e) {
+        e.preventDefault();
+        await registerStudent();
+      });
+      $('#registerAnotherBtn').click(function() {
+        $('#qrCodeSection').addClass('hidden');
+        $('#registrationSection').removeClass('hidden');
+        $('#studentRegistrationForm')[0].reset();
+        $('#statusMessages').addClass('hidden').empty();
+      });
+      $('#printQrBtn').click(function() {
+        printQRCode();
+      });
+    }
+
+    async function registerStudent() {
+      showStatusMessage('loading', 'Registering student...');
+      const data = {
+        name: $('#studentName').val().trim(),
+        course: $('#course').val(),
+        level: $('#level').val(),
+        section: $('#section').val().trim()
+      };
+      try {
+        const student = await $.ajax({
+          url: '/api/v1/students/register',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(data)
+        });
+        showStatusMessage('success', 'Student registered!');
+        setTimeout(() => {
+          displayStudentWithQR(student);
+        }, 1000);
+      } catch (error) {
+        let msg = 'Registration failed';
+        if (error.responseJSON && error.responseJSON.detail) {
+          msg = error.responseJSON.detail;
+        }
+        showStatusMessage('error', msg);
+      }
+    }
+
+    function showStatusMessage(type, message) {
+      const statusDiv = $('#statusMessages');
+      let icon = '', bgClass = '';
+      switch (type) {
+        case 'loading':
+          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
+          bgClass = 'bg-blue-100 text-blue-800';
+          break;
+        case 'success':
+          icon = '<i class="fas fa-check-circle mr-2"></i>';
+          bgClass = 'bg-green-100 text-green-800';
+          break;
+        case 'error':
+          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
+          bgClass = 'bg-red-100 text-red-800';
+          break;
+        default:
+          icon = '<i class="fas fa-info-circle mr-2"></i>';
+          bgClass = 'bg-gray-100 text-gray-800';
+      }
+      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
+    }
+
+    function displayStudentWithQR(student) {
+      $('#registrationSection').addClass('hidden');
+      $('#qrCodeSection').removeClass('hidden');
+      $('#studentIdDisplay').text(student.id);
+      $('#studentNameDisplay').text(student.name);
+      $('#studentCourseDisplay').text(student.course);
+      $('#studentLevelDisplay').text(student.level);
+      $('#studentSectionDisplay').text(student.section);
+      $.ajax({
+        url: '/qr/generate',
+        method: 'POST',
+        data:{
+          content: JSON.stringify({
+            id: student.id,
+            name: student.name,
+            course: student.course,
+            level: student.level,
+            section: student.section
+          }),
+          size: 10
+        }
+      }).then(response => {
+        if(response.svg) {
+          $('#qrCodeDisplay').html(response.svg);
+        } else {
+          $('#qrCodeDisplay').html('<div class="text-red-500">QR Code generation failed</div>');
+        }
+      }).catch(error => {
+        $('#qrCodeDisplay').html('<div class="text-red-500">QR Code generation failed</div>');
+      });
+    }
+
+    function printQRCode() {
+      const printWin = window.open('', '_blank');
+      const studentInfo = `
+        <div style="text-align:center; font-family: Arial, sans-serif; margin-bottom: 20px;">
+          <h2>${$('#studentNameDisplay').text()}</h2>
+          <p>ID: ${$('#studentIdDisplay').text()}</p>
+          <p>Course: ${$('#studentCourseDisplay').text()}</p>
+          <p>Year: ${$('#studentLevelDisplay').text()}</p>
+          <p>Section: ${$('#studentSectionDisplay').text()}</p>
+        </div>
+      `;
+      printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Print QR Code</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+            @media print { @page { size: 80mm 100mm; margin: 0; } }
+          </style>
+        </head>
+        <body>
+          ${studentInfo}
+          ${$('#qrCodeDisplay').html()}
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 500);
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+    }
+
+    /*====================================
+                 View All Students
+    ====================================*/
+    async function loadAllStudents() {
+      try {
+        const students = await $.ajax({
+          url: '/api/v1/admin/students',
+          method: 'GET'
+        });
+        let tableRows = '';
+        students.forEach(s => {
+          tableRows += `
+            <tr class="hover:bg-gray-100">
+              <td class="px-4 py-2">${s.id}</td>
+              <td class="px-4 py-2">${s.name}</td>
+              <td class="px-4 py-2">${s.course}</td>
+              <td class="px-4 py-2">${s.level}</td>
+              <td class="px-4 py-2">${s.section}</td>
+              <td class="px-4 py-2 text-right">
+                <button class="view-btn text-blue-600" data-id="${s.id}"><i class="fas fa-eye"></i></button>
+              </td>
+            </tr>
+          `;
+        });
+        $('#mainContent').html(`
+          <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-2xl font-bold mb-4">All Students</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="bg-gray-200">
+                    <th class="px-4 py-2">ID</th>
+                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Course</th>
+                    <th class="px-4 py-2">Year</th>
+                    <th class="px-4 py-2">Section</th>
+                    <th class="px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `);
+        $('.view-btn').click(function() {
+          const id = $(this).data('id');
+          viewStudentDetails(id);
+        });
+      } catch (error) {
+        $('#mainContent').html('<div class="text-red-500">Error loading students.</div>');
+      }
+    }
+
+    /*====================================
+             View Student Details
+    ====================================*/
+    async function viewStudentDetails(studentId) {
+      try {
+        const student = await $.ajax({
+          url: `/api/v1/admin/students/${studentId}`,
+          method: 'GET'
+        });
+        alert(`Student Details:
+ID: ${student.id}
+Name: ${student.name}
+Course: ${student.course}
+Year: ${student.level}
+Section: ${student.section}`);
+      } catch (error) {
+        alert("Failed to load student details.");
+      }
+    }
+
+    /*====================================
+                Search Students
+    ====================================*/
+    function loadSearchForm() {
+      $('#mainContent').html(`
+        <div class="bg-white p-6 rounded shadow">
+          <h2 class="text-2xl font-bold mb-4">Search Students</h2>
+          <div class="mb-4">
+            <input type="text" id="searchQuery" placeholder="Search by name, course, level, or section" class="w-full p-2 border rounded">
+          </div>
+          <button id="searchBtn" class="px-4 py-2 bg-indigo-600 text-white rounded mb-4">
+            <i class="fas fa-search mr-1"></i> Search
+          </button>
+          <div id="searchResults"></div>
+        </div>
+      `);
+      $('#searchBtn').click(performSearch);
+      $('#searchQuery').keypress(function(e) {
+        if(e.which === 13) { performSearch(); }
+      });
+    }
+
+    async function performSearch() {
+      const query = $('#searchQuery').val().trim();
+      if (!query) {
+        alert("Enter a search term.");
+        return;
+      }
+      $('#searchResults').html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Searching...</div>');
+      try {
+        const results = await $.ajax({
+          url: `/api/v1/admin/students/search?query=${encodeURIComponent(query)}`,
+          method: 'GET'
+        });
+        if (results.length > 0) {
+          let rows = '';
+          results.forEach(s => {
+            rows += `
+              <tr class="hover:bg-gray-100">
+                <td class="px-4 py-2">${s.id}</td>
+                <td class="px-4 py-2">${s.name}</td>
+                <td class="px-4 py-2">${s.course}</td>
+                <td class="px-4 py-2">${s.level}</td>
+                <td class="px-4 py-2">${s.section}</td>
+                <td class="px-4 py-2 text-right">
+                  <button class="view-btn text-blue-600" data-id="${s.id}"><i class="fas fa-eye"></i></button>
+                </td>
+              </tr>
+            `;
+          });
+          $('#searchResults').html(`
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="bg-gray-200">
+                    <th class="px-4 py-2">ID</th>
+                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Course</th>
+                    <th class="px-4 py-2">Year</th>
+                    <th class="px-4 py-2">Section</th>
+                    <th class="px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+              </table>
+            </div>
+          `);
+          $('.view-btn').click(function() {
+            const id = $(this).data('id');
+            viewStudentDetails(id);
+          });
+        } else {
+          $('#searchResults').html('<div class="text-center p-4">No students found.</div>');
+        }
+      } catch (error) {
+        $('#searchResults').html('<div class="text-center p-4 text-red-500">Error performing search.</div>');
+      }
+    }
+
+    /*====================================
+               Create Admin
+    ====================================*/
+    function loadCreateAdmin() {
+      $('#mainContent').html(`
+        <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
+          <h2 class="text-2xl font-bold mb-4">Create New Admin</h2>
+          <form id="createAdminForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium">Email</label>
+              <input type="email" id="adminEmailInput" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Password</label>
+              <input type="password" id="adminPasswordInput" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Confirm Password</label>
+              <input type="password" id="adminConfirmPasswordInput" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Admin</button>
+            </div>
+          </form>
+          <div id="adminStatusMsg" class="mt-4 hidden"></div>
+        </div>
+      `);
+      $('#createAdminForm').on('submit', async function(e) {
+        e.preventDefault();
+        createAdmin();
+      });
+    }
+
+    async function createAdmin() {
+      const email = $('#adminEmailInput').val().trim();
+      const password = $('#adminPasswordInput').val();
+      const confirmPassword = $('#adminConfirmPasswordInput').val();
+      if(password !== confirmPassword) {
+        showAdminStatus('error', 'Passwords do not match.');
+        return;
+      }
+      try {
+        const response = await $.ajax({
+          url: '/api/v1/admin/create',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ email, password })
+        });
+        showAdminStatus('success', 'Admin created successfully!');
+      } catch (error) {
+        let msg = 'Failed to create admin';
+        if(error.responseJSON && error.responseJSON.detail) {
+          msg = error.responseJSON.detail;
+        }
+        showAdminStatus('error', msg);
+      }
+    }
+
+    function showAdminStatus(type, message) {
+      const statusDiv = $('#adminStatusMsg');
+      let icon = '', bgClass = '';
+      switch(type) {
+        case 'success':
+          icon = '<i class="fas fa-check-circle mr-2"></i>';
+          bgClass = 'bg-green-100 text-green-800';
+          break;
+        case 'error':
+          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
+          bgClass = 'bg-red-100 text-red-800';
+          break;
+        default:
+          icon = '<i class="fas fa-info-circle mr-2"></i>';
+          bgClass = 'bg-gray-100 text-gray-800';
+      }
+      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
+    }
+
+    /*====================================
+                  Document Ready
+    ====================================*/
     $(document).ready(async function() {
       if (!checkAuth()) return;
-      
-      setupAjaxDefaults();
-      
-      // Verify session before showing dashboard
-      if (!await verifySession()) {
+      setupAjax();
+      const valid = await verifySession();
+      if (!valid) {
         localStorage.removeItem('adminToken');
         window.location.href = '/admin/login';
         return;
       }
-
-      // Handle navigation
+      // Navigation handlers
       $('nav a').click(function(e) {
         e.preventDefault();
         const page = $(this).data('page');
         loadPage(page);
       });
-
-      // Handle logout
+      // Logout handler
       $('#logoutBtn').click(async function() {
         try {
-          await $.ajax({
-            url: '/api/v1/admin/logout',
-            method: 'POST'
-          });
+          await $.ajax({ url: '/api/v1/admin/logout', method: 'POST' });
         } catch (error) {
-          console.error('Logout error:', error);
+          console.error("Logout error:", error);
         } finally {
           localStorage.removeItem('adminToken');
           window.location.href = '/admin/login';
         }
       });
-
-      // Load default page
+      // Load the default page
       loadPage('dashboard');
     });
-
-    function loadPage(page) {
-      if (!checkAuth()) return;
-      
-      $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
-
-      switch (page) {
-        case 'dashboard':
-          loadDashboard();
-          break;
-        case 'register':
-          loadRegisterForm();
-          break;
-        case 'view-all':
-          loadAllStudents();
-          break;
-        case 'create-admin':
-          loadCreateAdmin();
-          break;
-        case 'search':
-          loadSearchForm();
-          break;
-      }
-    }
-
-    // Page loading functions with proper error handling
-    async function loadDashboard() {
-      try {
-        const response = await $.ajax({
-          url: '/api/v1/admin/dashboard-stats',
-          method: 'GET'
-        });
-        $('#mainContent').html(`
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-              <h3 class="text-xl font-semibold mb-2">Total Students</h3>
-              <p class="text-3xl">${response.totalStudents || 0}</p>
-            </div>
-          </div>
-        `);
-      } catch (error) {
-        $('#mainContent').html('<div class="text-red-600">Error loading dashboard data</div>');
-      }
-    }
-
-    // Implement other page loading functions similarly...
-    function loadRegisterForm() {
-      $('#mainContent').html('<h3>Register Student Form</h3>');
-    }
-
-    function loadAllStudents() {
-      $('#mainContent').html('<h3>All Students List</h3>');
-    }
-
-    function loadCreateAdmin() {
-      $('#mainContent').html('<h3>Create Admin Form</h3>');
-    }
-
-    function loadSearchForm() {
-      $('#mainContent').html('<h3>Search Students</h3>');
-    }
   </script>
 </body>
 </html>

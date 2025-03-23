@@ -63,6 +63,86 @@
     </div>
   </div>
 
+  <!-- Edit Student Modal -->
+  <div id="editStudentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">Edit Student</h3>
+        <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="editStudentForm" class="space-y-4">
+        <input type="hidden" id="editStudentMatric">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium">Matric (readonly)</label>
+            <input type="text" id="editMatric" class="w-full p-2 border rounded bg-gray-100" readonly>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">First Name</label>
+            <input type="text" id="editFirstname" class="w-full p-2 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Last Name</label>
+            <input type="text" id="editLastname" class="w-full p-2 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Gender</label>
+            <select id="editGender" class="w-full p-2 border rounded" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Course</label>
+            <select id="editCourse" class="w-full p-2 border rounded" required>
+              <option value="BSIT">BS Information Technology</option>
+              <option value="BSCS">BS Computer Science</option>
+              <option value="BSIS">BS Information Systems</option>
+              <option value="BSCE">BS Computer Engineering</option>
+              <option value="BSECE">BS Electronics Engineering</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Year Level</label>
+            <select id="editLevel" class="w-full p-2 border rounded" required>
+              <option value="1">First Year</option>
+              <option value="2">Second Year</option>
+              <option value="3">Third Year</option>
+              <option value="4">Fourth Year</option>
+              <option value="5">Fifth Year</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Section</label>
+            <input type="text" id="editSection" class="w-full p-2 border rounded" required>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 mt-4">
+          <button type="button" id="cancelEditBtn" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Changes</button>
+        </div>
+      </form>
+      <div id="editStatusMessages" class="mt-4 hidden"></div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+      <div class="text-center">
+        <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+        <h3 class="text-xl font-bold mb-2">Confirm Delete</h3>
+        <p id="confirmMessage" class="mb-6">Are you sure you want to delete this student?</p>
+        <div class="flex justify-center space-x-4">
+          <button id="cancelDeleteBtn" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+          <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white rounded">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /*====================================
       Authentication & AJAX Setup
@@ -129,7 +209,7 @@
     async function loadDashboard() {
       try {
         const stats = await $.ajax({
-          url: '/api/v1/admin/dashboard-stats',
+          url: '/api/v1/admin/dashboard',
           method: 'GET'
         });
         $('#mainContent').html(`
@@ -156,8 +236,24 @@
             <h2 class="text-2xl font-bold mb-4">Register New Student</h2>
             <form id="studentRegistrationForm" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium">Full Name</label>
-                <input type="text" id="studentName" class="w-full p-2 border rounded" required>
+                <label class="block text-sm font-medium">Matric</label>
+                <input type="text" id="studentMatric" class="w-full p-2 border rounded" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">FirstName</label>
+                <input type="text" id="studentFirstname" class="w-full p-2 border rounded" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">LastName</label>
+                <input type="text" id="studentLastname" class="w-full p-2 border rounded" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium">Gender</label>
+                <select id="studentgender" class="w-full p-2 border rounded" required>
+                  <option value="" disabled selected>Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
               </div>
               <div>
                 <label class="block text-sm font-medium">Course</label>
@@ -201,7 +297,10 @@
             <p class="mb-4">Student details:</p>
             <table class="mx-auto text-left">
               <tr><td class="font-bold">ID:</td><td id="studentIdDisplay"></td></tr>
-              <tr><td class="font-bold">Name:</td><td id="studentNameDisplay"></td></tr>
+              <tr><td class="font-bold">Matric:</td><td id="studentMatricDisplay"></td></tr>
+              <tr><td class="font-bold">FirstName:</td><td id="studentFirstnameDisplay"></td></tr>
+              <tr><td class="font-bold">LastName:</td><td id="studentLastnameDisplay"></td></tr>
+              <tr><td class="font-bold">gender:</td><td id="studentgenderDisplay"></td></tr>
               <tr><td class="font-bold">Course:</td><td id="studentCourseDisplay"></td></tr>
               <tr><td class="font-bold">Year:</td><td id="studentLevelDisplay"></td></tr>
               <tr><td class="font-bold">Section:</td><td id="studentSectionDisplay"></td></tr>
@@ -240,14 +339,17 @@
     async function registerStudent() {
       showStatusMessage('loading', 'Registering student...');
       const data = {
-        name: $('#studentName').val().trim(),
+        Matric: $('#studentMatric').val().trim(),
+        Firstname: $('#studentFirstname').val().trim(),
+        Lastname: $('#studentLastname').val().trim(),
+        gender: $('#studentgender').val(),
         course: $('#course').val(),
         level: $('#level').val(),
         section: $('#section').val().trim()
       };
       try {
         const student = await $.ajax({
-          url: '/api/v1/students/register',
+          url: '/api/v1/admin/register-student',
           method: 'POST',
           contentType: 'application/json',
           data: JSON.stringify(data)
@@ -292,7 +394,10 @@
       $('#registrationSection').addClass('hidden');
       $('#qrCodeSection').removeClass('hidden');
       $('#studentIdDisplay').text(student.id);
-      $('#studentNameDisplay').text(student.name);
+      $('#studentMatricDisplay').text(student.Matric);
+      $('#studentFirstnameDisplay').text(student.Firstname);
+      $('#studentLastnameDisplay').text(student.Lastname);
+      $('#studentgenderDisplay').text(student.gender);
       $('#studentCourseDisplay').text(student.course);
       $('#studentLevelDisplay').text(student.level);
       $('#studentSectionDisplay').text(student.section);
@@ -301,8 +406,10 @@
         method: 'POST',
         data:{
           content: JSON.stringify({
-            id: student.id,
-            name: student.name,
+            Matric: student.Matric,
+            Firstname: student.Firstname,
+            Lastname: student.Lastname,
+            gender: student.gender,
             course: student.course,
             level: student.level,
             section: student.section
@@ -324,8 +431,11 @@
       const printWin = window.open('', '_blank');
       const studentInfo = `
         <div style="text-align:center; font-family: Arial, sans-serif; margin-bottom: 20px;">
-          <h2>${$('#studentNameDisplay').text()}</h2>
-          <p>ID: ${$('#studentIdDisplay').text()}</p>
+          <h2>${$('#studentFirstnameDisplay').text()} ${$('#studentLastnameDisplay').text()}</h2>
+          <p>Matric: ${$('#studentMatricDisplay').text()}</p>
+          <p>FirstName: ${$('#studentFirstnameDisplay').text()}</p>
+          <p>LastName: ${$('#studentLastnameDisplay').text()}</p>
+          <p>Gender: ${$('#studentgenderDisplay').text()}</p>
           <p>Course: ${$('#studentCourseDisplay').text()}</p>
           <p>Year: ${$('#studentLevelDisplay').text()}</p>
           <p>Section: ${$('#studentSectionDisplay').text()}</p>
@@ -371,13 +481,24 @@
         students.forEach(s => {
           tableRows += `
             <tr class="hover:bg-gray-100">
-              <td class="px-4 py-2">${s.id}</td>
-              <td class="px-4 py-2">${s.name}</td>
+              <td class="px-4 py-2">${s.id || ''}</td>
+              <td class="px-4 py-2">${s.Matric}</td>
+              <td class="px-4 py-2">${s.Firstname}</td>
+              <td class="px-4 py-2">${s.Lastname}</td>
+              <td class="px-4 py-2">${s.gender}</td>
               <td class="px-4 py-2">${s.course}</td>
               <td class="px-4 py-2">${s.level}</td>
               <td class="px-4 py-2">${s.section}</td>
               <td class="px-4 py-2 text-right">
-                <button class="view-btn text-blue-600" data-id="${s.id}"><i class="fas fa-eye"></i></button>
+                <button class="view-btn text-blue-600 mr-2" data-matric="${s.Matric}">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="edit-btn text-yellow-600 mr-2" data-matric="${s.Matric}">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="delete-btn text-red-600" data-matric="${s.Matric}">
+                  <i class="fas fa-trash"></i>
+                </button>
               </td>
             </tr>
           `;
@@ -390,7 +511,10 @@
                 <thead>
                   <tr class="bg-gray-200">
                     <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Matric</th>
+                    <th class="px-4 py-2">FirstName</th>
+                    <th class="px-4 py-2">LastName</th>
+                    <th class="px-4 py-2">Gender</th>
                     <th class="px-4 py-2">Course</th>
                     <th class="px-4 py-2">Year</th>
                     <th class="px-4 py-2">Section</th>
@@ -405,8 +529,16 @@
           </div>
         `);
         $('.view-btn').click(function() {
-          const id = $(this).data('id');
-          viewStudentDetails(id);
+          const matric = $(this).data('matric');
+          viewStudentDetails(matric);
+        });
+        $('.edit-btn').click(function() {
+          const matric = $(this).data('matric');
+          openEditModal(matric);
+        });
+        $('.delete-btn').click(function() {
+          const matric = $(this).data('matric');
+          openDeleteConfirmation(matric);
         });
       } catch (error) {
         $('#mainContent').html('<div class="text-red-500">Error loading students.</div>');
@@ -416,166 +548,142 @@
     /*====================================
              View Student Details
     ====================================*/
-    async function viewStudentDetails(studentId) {
+    async function viewStudentDetails(studentMatric) {
       try {
         const student = await $.ajax({
-          url: `/api/v1/admin/students/${studentId}`,
+          url: `/api/v1/admin/students/${studentMatric}`,
           method: 'GET'
         });
-        alert(`Student Details:
-ID: ${student.id}
-Name: ${student.name}
-Course: ${student.course}
-Year: ${student.level}
-Section: ${student.section}`);
+        
+        // Create a more attractive student details view
+        const detailsHtml = `
+          <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Student Details</h3>
+                <button class="close-details text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="space-y-4">
+                <div class="flex justify-center mb-4">
+                  <div class="h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-4xl text-indigo-500"></i>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="font-medium">Matric:</div>
+                  <div>${student.Matric}</div>
+                  <div class="font-medium">Name:</div>
+                  <div>${student.Firstname} ${student.Lastname}</div>
+                  <div class="font-medium">Gender:</div>
+                  <div>${student.gender}</div>
+                  <div class="font-medium">Course:</div>
+                  <div>${student.course}</div>
+                  <div class="font-medium">Year Level:</div>
+                  <div>${student.level}</div>
+                  <div class="font-medium">Section:</div>
+                  <div>${student.section}</div>
+                </div>
+                <div class="flex justify-end mt-4">
+                  <button class="close-details px-4 py-2 bg-indigo-600 text-white rounded">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        $('body').append(detailsHtml);
+        $('.close-details').click(function() {
+          $(this).closest('.fixed').remove();
+        });
       } catch (error) {
         alert("Failed to load student details.");
       }
     }
 
     /*====================================
-                Search Students
+          Edit Student Functionality
     ====================================*/
-    function loadSearchForm() {
-      $('#mainContent').html(`
-        <div class="bg-white p-6 rounded shadow">
-          <h2 class="text-2xl font-bold mb-4">Search Students</h2>
-          <div class="mb-4">
-            <input type="text" id="searchQuery" placeholder="Search by name, course, level, or section" class="w-full p-2 border rounded">
-          </div>
-          <button id="searchBtn" class="px-4 py-2 bg-indigo-600 text-white rounded mb-4">
-            <i class="fas fa-search mr-1"></i> Search
-          </button>
-          <div id="searchResults"></div>
-        </div>
-      `);
-      $('#searchBtn').click(performSearch);
-      $('#searchQuery').keypress(function(e) {
-        if(e.which === 13) { performSearch(); }
-      });
-    }
-
-    async function performSearch() {
-      const query = $('#searchQuery').val().trim();
-      if (!query) {
-        alert("Enter a search term.");
-        return;
-      }
-      $('#searchResults').html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Searching...</div>');
+    async function openEditModal(studentMatric) {
       try {
-        const results = await $.ajax({
-          url: `/api/v1/admin/students/search?query=${encodeURIComponent(query)}`,
+        const student = await $.ajax({
+          url: `/api/v1/admin/students/${studentMatric}`,
           method: 'GET'
         });
-        if (results.length > 0) {
-          let rows = '';
-          results.forEach(s => {
-            rows += `
-              <tr class="hover:bg-gray-100">
-                <td class="px-4 py-2">${s.id}</td>
-                <td class="px-4 py-2">${s.name}</td>
-                <td class="px-4 py-2">${s.course}</td>
-                <td class="px-4 py-2">${s.level}</td>
-                <td class="px-4 py-2">${s.section}</td>
-                <td class="px-4 py-2 text-right">
-                  <button class="view-btn text-blue-600" data-id="${s.id}"><i class="fas fa-eye"></i></button>
-                </td>
-              </tr>
-            `;
-          });
-          $('#searchResults').html(`
-            <div class="overflow-x-auto">
-              <table class="min-w-full">
-                <thead>
-                  <tr class="bg-gray-200">
-                    <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Name</th>
-                    <th class="px-4 py-2">Course</th>
-                    <th class="px-4 py-2">Year</th>
-                    <th class="px-4 py-2">Section</th>
-                    <th class="px-4 py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rows}
-                </tbody>
-              </table>
-            </div>
-          `);
-          $('.view-btn').click(function() {
-            const id = $(this).data('id');
-            viewStudentDetails(id);
-          });
-        } else {
-          $('#searchResults').html('<div class="text-center p-4">No students found.</div>');
-        }
-      } catch (error) {
-        $('#searchResults').html('<div class="text-center p-4 text-red-500">Error performing search.</div>');
-      }
-    }
-
-    /*====================================
-               Create Admin
-    ====================================*/
-    function loadCreateAdmin() {
-      $('#mainContent').html(`
-        <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
-          <h2 class="text-2xl font-bold mb-4">Create New Admin</h2>
-          <form id="createAdminForm" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium">Email</label>
-              <input type="email" id="adminEmailInput" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Password</label>
-              <input type="password" id="adminPasswordInput" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Confirm Password</label>
-              <input type="password" id="adminConfirmPasswordInput" class="w-full p-2 border rounded" required>
-            </div>
-            <div class="flex justify-end">
-              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Admin</button>
-            </div>
-          </form>
-          <div id="adminStatusMsg" class="mt-4 hidden"></div>
-        </div>
-      `);
-      $('#createAdminForm').on('submit', async function(e) {
-        e.preventDefault();
-        createAdmin();
-      });
-    }
-
-    async function createAdmin() {
-      const email = $('#adminEmailInput').val().trim();
-      const password = $('#adminPasswordInput').val();
-      const confirmPassword = $('#adminConfirmPasswordInput').val();
-      if(password !== confirmPassword) {
-        showAdminStatus('error', 'Passwords do not match.');
-        return;
-      }
-      try {
-        const response = await $.ajax({
-          url: '/api/v1/admin/create',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify({ email, password })
+        
+        // Populate form fields
+        $('#editStudentMatric').val(studentMatric);
+        $('#editMatric').val(student.Matric);
+        $('#editFirstname').val(student.Firstname);
+        $('#editLastname').val(student.Lastname);
+        $('#editGender').val(student.gender);
+        $('#editCourse').val(student.course);
+        $('#editLevel').val(student.level);
+        $('#editSection').val(student.section);
+        
+        // Show modal
+        $('#editStudentModal').removeClass('hidden').addClass('flex');
+        
+        // Setup event handlers
+        $('#closeEditModal, #cancelEditBtn').off('click').on('click', function() {
+          $('#editStudentModal').removeClass('flex').addClass('hidden');
+          $('#editStatusMessages').addClass('hidden');
         });
-        showAdminStatus('success', 'Admin created successfully!');
+        
+        $('#editStudentForm').off('submit').on('submit', async function(e) {
+          e.preventDefault();
+          await updateStudent(studentMatric);
+        });
       } catch (error) {
-        let msg = 'Failed to create admin';
-        if(error.responseJSON && error.responseJSON.detail) {
+        alert("Failed to load student details for editing.");
+      }
+    }
+    
+    async function updateStudent(studentMatric) {
+      const data = {
+        Firstname: $('#editFirstname').val().trim(),
+        Lastname: $('#editLastname').val().trim(),
+        gender: $('#editGender').val(),
+        course: $('#editCourse').val(),
+        level: $('#editLevel').val(),
+        section: $('#editSection').val().trim()
+      };
+      
+      try {
+        showEditStatusMessage('loading', 'Updating student information...');
+        
+        await $.ajax({
+          url: `/api/v1/admin/students/${studentMatric}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(data)
+        });
+        
+        showEditStatusMessage('success', 'Student updated successfully!');
+        
+        setTimeout(() => {
+          $('#editStudentModal').removeClass('flex').addClass('hidden');
+          // Reload student list to show changes
+          loadAllStudents();
+        }, 1500);
+      } catch (error) {
+        let msg = 'Failed to update student';
+        if (error.responseJSON && error.responseJSON.detail) {
           msg = error.responseJSON.detail;
         }
-        showAdminStatus('error', msg);
+        showEditStatusMessage('error', msg);
       }
     }
-
-    function showAdminStatus(type, message) {
-      const statusDiv = $('#adminStatusMsg');
+    
+    function showEditStatusMessage(type, message) {
+      const statusDiv = $('#editStatusMessages');
       let icon = '', bgClass = '';
-      switch(type) {
+      switch (type) {
+        case 'loading':
+          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
+          bgClass = 'bg-blue-100 text-blue-800';
+          break;
         case 'success':
           icon = '<i class="fas fa-check-circle mr-2"></i>';
           bgClass = 'bg-green-100 text-green-800';
@@ -592,36 +700,345 @@ Section: ${student.section}`);
     }
 
     /*====================================
-                  Document Ready
+          Delete Student Functionality
     ====================================*/
-    $(document).ready(async function() {
-      if (!checkAuth()) return;
-      setupAjax();
-      const valid = await verifySession();
-      if (!valid) {
-        localStorage.removeItem('adminToken');
-        window.location.href = '/admin/login';
+    function openDeleteConfirmation(studentMatric) {
+      $('#confirmDeleteBtn').data('matric', studentMatric);
+      $('#confirmMessage').text(`Are you sure you want to delete student with Matric: ${studentMatric}?`);
+      $('#confirmationModal').removeClass('hidden').addClass('flex');
+      
+      $('#cancelDeleteBtn').off('click').on('click', function() {
+        $('#confirmationModal').removeClass('flex').addClass('hidden');
+      });
+      
+      $('#confirmDeleteBtn').off('click').on('click', async function() {
+        const matric = $(this).data('matric');
+        await deleteStudent(matric);
+      });
+    }
+    
+    async function deleteStudent(studentMatric) {
+      try {
+        $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting...');
+        $('#confirmDeleteBtn').prop('disabled', true);
+        
+        await $.ajax({
+          url: `/api/v1/admin/students/${studentMatric}`,
+          method: 'DELETE'
+        });
+        
+        $('#confirmationModal').removeClass('flex').addClass('hidden');
+        // Show success message
+        const alertHtml = `
+          <div class="fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-md" id="deleteAlert">
+            <div class="flex">
+              <div class="py-1"><i class="fas fa-check-circle"></i></div>
+              <div class="ml-3">
+                <p class="font-medium">Student deleted successfully!</p>
+              </div>
+              <div class="ml-auto pl-3">
+                <button class="close-alert"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+        $('body').append(alertHtml);
+        
+        setTimeout(() => {
+          $('#deleteAlert').remove();
+          loadAllStudents(); // Reload student list
+        }, 2000);
+        
+        $('.close-alert').click(function() {
+          $('#deleteAlert').remove();
+        });
+      } catch (error) {
+        $('#confirmDeleteBtn').html('Delete');
+        $('#confirmDeleteBtn').prop('disabled', false);
+        
+        let errorMsg = 'Failed to delete student';
+        if (error.responseJSON && error.responseJSON.detail) {
+          errorMsg = error.responseJSON.detail;
+        }
+        
+        $('#confirmMessage').html(`<div class="text-red-500 mt-2">${errorMsg}</div>`);
+      }
+    }
+
+    /*====================================
+              Search Functionality
+    ====================================*/
+    function loadSearchForm() {
+      $('#mainContent').html(`
+        <div class="bg-white p-6 rounded shadow">
+          <h2 class="text-2xl font-bold mb-4">Search Students</h2>
+          <form id="searchForm" class="mb-6">
+            <div class="flex space-x-4">
+              <div class="flex-1">
+                <input type="text" id="searchQuery" class="w-full p-2 border rounded" 
+                  placeholder="Search by Matric, Name, Course, or Level">
+              </div>
+              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+                <i class="fas fa-search mr-1"></i> Search
+              </button>
+            </div>
+          </form>
+          
+          <div id="searchResults" class="mt-4">
+            <p class="text-gray-500">Enter search terms above to find students.</p>
+          </div>
+        </div>
+      `);
+      
+      $('#searchForm').on('submit', async function(e) {
+        e.preventDefault();
+        await searchStudents();
+      });
+    }
+    
+    async function searchStudents() {
+      const query = $('#searchQuery').val().trim();
+      if (!query) {
+        $('#searchResults').html('<p class="text-yellow-500">Please enter a search term.</p>');
         return;
       }
-      // Navigation handlers
-      $('nav a').click(function(e) {
+      
+      try {
+        $('#searchResults').html(`
+          <div class="flex justify-center">
+            <i class="fas fa-spinner fa-spin text-indigo-600 text-3xl"></i>
+          </div>
+        `);
+        
+        // Get all students and filter on the client side
+        const students = await $.ajax({
+          url: '/api/v1/admin/students',
+          method: 'GET'
+        });
+        
+        // Filter based on the query
+        const filteredStudents = students.filter(student => {
+          const searchTerms = query.toLowerCase();
+          return (
+            student.Matric.toLowerCase().includes(searchTerms) ||
+            student.Firstname.toLowerCase().includes(searchTerms) ||
+            student.Lastname.toLowerCase().includes(searchTerms) ||
+            student.course.toLowerCase().includes(searchTerms) ||
+            student.level.toString().includes(searchTerms) ||
+            student.section.toLowerCase().includes(searchTerms)
+          );
+        });
+        
+        if (filteredStudents.length === 0) {
+          $('#searchResults').html('<p class="text-gray-500">No students found matching your search criteria.</p>');
+          return;
+        }
+        
+        let tableRows = '';
+        filteredStudents.forEach(s => {
+          tableRows += `
+            <tr class="hover:bg-gray-100">
+              <td class="px-4 py-2">${s.Matric}</td>
+              <td class="px-4 py-2">${s.Firstname}</td>
+              <td class="px-4 py-2">${s.Lastname}</td>
+              <td class="px-4 py-2">${s.gender}</td>
+              <td class="px-4 py-2">${s.course}</td>
+              <td class="px-4 py-2">${s.level}</td>
+              <td class="px-4 py-2">${s.section}</td>
+              <td class="px-4 py-2 text-right">
+                <button class="view-btn text-blue-600 mr-2" data-matric="${s.Matric}">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="edit-btn text-yellow-600 mr-2" data-matric="${s.Matric}">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="delete-btn text-red-600" data-matric="${s.Matric}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        
+        $('#searchResults').html(`
+          <h3 class="text-lg font-semibold mb-2">Search Results (${filteredStudents.length})</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="bg-gray-200">
+                  <th class="px-4 py-2">Matric</th>
+                  <th class="px-4 py-2">FirstName</th>
+                  <th class="px-4 py-2">LastName</th>
+                  <th class="px-4 py-2">Gender</th>
+                  <th class="px-4 py-2">Course</th>
+                  <th class="px-4 py-2">Year</th>
+                  <th class="px-4 py-2">Section</th>
+                  <th class="px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+        `);
+        
+        // Add event listeners to action buttons
+        $('.view-btn').click(function() {
+          const matric = $(this).data('matric');
+          viewStudentDetails(matric);
+        });
+        $('.edit-btn').click(function() {
+          const matric = $(this).data('matric');
+          openEditModal(matric);
+        });
+        $('.delete-btn').click(function() {
+          const matric = $(this).data('matric');
+          openDeleteConfirmation(matric);
+        });
+      } catch (error) {
+        $('#searchResults').html('<p class="text-red-500">Error searching for students. Please try again.</p>');
+      }
+    }
+
+    /*====================================
+              Create Admin User
+    ====================================*/
+    function loadCreateAdmin() {
+      $('#mainContent').html(`
+        <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+          <h2 class="text-2xl font-bold mb-4">Create Admin User</h2>
+          <form id="createAdminForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium">Full Name</label>
+              <input type="text" id="adminName" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Email</label>
+              <input type="email" id="adminEmail" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Password</label>
+              <input type="password" id="adminPassword" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Confirm Password</label>
+              <input type="password" id="confirmPassword" class="w-full p-2 border rounded" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Admin Type</label>
+              <select id="adminType" class="w-full p-2 border rounded" required>
+                <option value="full">Full Access</option>
+                <option value="limited">Limited Access</option>
+              </select>
+            </div>
+            <div class="flex justify-end space-x-2">
+              <button type="button" id="clearAdminFormBtn" class="px-4 py-2 bg-gray-300 rounded">Clear</button>
+              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+                <i class="fas fa-user-shield mr-1"></i> Create Admin
+              </button>
+            </div>
+          </form>
+          <div id="adminStatusMessages" class="mt-4 hidden"></div>
+        </div>
+      `);
+      
+      $('#clearAdminFormBtn').click(function() {
+        $('#createAdminForm')[0].reset();
+        $('#adminStatusMessages').addClass('hidden').empty();
+      });
+      
+      $('#createAdminForm').on('submit', async function(e) {
+        e.preventDefault();
+        // Password validation
+        const password = $('#adminPassword').val();
+        const confirmPassword = $('#confirmPassword').val();
+        
+        if (password !== confirmPassword) {
+          showAdminStatusMessage('error', 'Passwords do not match');
+          return;
+        }
+        
+        await createAdminUser();
+      });
+    }
+    
+    async function createAdminUser() {
+      showAdminStatusMessage('loading', 'Creating admin user...');
+      
+      const data = {
+        name: $('#adminName').val().trim(),
+        email: $('#adminEmail').val().trim(),
+        password: $('#adminPassword').val(),
+        is_full_access: $('#adminType').val() === 'full'
+      };
+      
+      try {
+        await $.ajax({
+          url: '/api/v1/admin/create',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(data)
+        });
+        
+        showAdminStatusMessage('success', 'Admin user created successfully!');
+        $('#createAdminForm')[0].reset();
+      } catch (error) {
+        let msg = 'Failed to create admin user';
+        if (error.responseJSON && error.responseJSON.detail) {
+          msg = error.responseJSON.detail;
+        }
+        showAdminStatusMessage('error', msg);
+      }
+    }
+    
+    function showAdminStatusMessage(type, message) {
+      const statusDiv = $('#adminStatusMessages');
+      let icon = '', bgClass = '';
+      switch (type) {
+        case 'loading':
+          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
+          bgClass = 'bg-blue-100 text-blue-800';
+          break;
+        case 'success':
+          icon = '<i class="fas fa-check-circle mr-2"></i>';
+          bgClass = 'bg-green-100 text-green-800';
+          break;
+        case 'error':
+          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
+          bgClass = 'bg-red-100 text-red-800';
+          break;
+        default:
+          icon = '<i class="fas fa-info-circle mr-2"></i>';
+          bgClass = 'bg-gray-100 text-gray-800';
+      }
+      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
+    }
+
+    /*====================================
+            Application Initialization
+    ====================================*/
+    $(document).ready(function() {
+      setupAjax();
+      
+      if (checkAuth()) {
+        verifySession().then(valid => {
+          if (valid) {
+            loadPage('dashboard');
+          }
+        });
+      }
+      
+      $('.nav-link').click(function(e) {
         e.preventDefault();
         const page = $(this).data('page');
         loadPage(page);
       });
-      // Logout handler
-      $('#logoutBtn').click(async function() {
-        try {
-          await $.ajax({ url: '/api/v1/admin/logout', method: 'POST' });
-        } catch (error) {
-          console.error("Logout error:", error);
-        } finally {
-          localStorage.removeItem('adminToken');
-          window.location.href = '/admin/login';
-        }
+      
+      $('#logoutBtn').click(function() {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin/login';
       });
-      // Load the default page
-      loadPage('dashboard');
     });
   </script>
 </body>

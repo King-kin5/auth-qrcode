@@ -5,7 +5,10 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class StudentCreate(BaseModel):
-    name: str = Field(..., min_length=2, example="John Doe")
+    Matric:str = Field()
+    Firstname: str = Field(..., min_length=2, example="John")
+    Lastname: str = Field(..., min_length=2, example="Cena")
+    gender: str = Field(...,  example="Male")
     course: str = Field(..., min_length=2, example="Computer Science")
     level: str = Field(..., example="Year 2")
     section: str = Field(..., example="Section A")
@@ -14,7 +17,10 @@ class StudentCreate(BaseModel):
 
 class StudentResponse(BaseModel):
     id: int
-    name: str
+    Matric:str
+    Firstname: str
+    Lastname: str
+    gender: str
     course: str
     level: str
     section: str

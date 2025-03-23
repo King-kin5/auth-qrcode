@@ -719,15 +719,21 @@
     
     async function deleteStudent(studentMatric) {
       try {
+        const encodedMatric = encodeURIComponent(studentMatric);
         $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting...');
         $('#confirmDeleteBtn').prop('disabled', true);
         
         await $.ajax({
-          url: `/api/v1/admin/students/${studentMatric}`,
+          url: `/api/v1/admin/students/${encodedMatric}`,
           method: 'DELETE'
         });
         
+        // Reset button state before hiding modal
+        $('#confirmDeleteBtn').html('Delete');
+        $('#confirmDeleteBtn').prop('disabled', false);
+    
         $('#confirmationModal').removeClass('flex').addClass('hidden');
+
         // Show success message
         const alertHtml = `
           <div class="fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-md" id="deleteAlert">

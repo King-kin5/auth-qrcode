@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Any, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Path
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -146,33 +146,6 @@ async def get_student(
         )
     return student
 
-@router.delete("/students/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_student(
-    student_id: int,
-    db: Session = Depends(get_db),
-    current_admin: Admin = Depends(get_current_admin)
-):
-    """
-    Delete a student by ID (admin only).
-    """
-    service = AdminStudentService(db)
-    try:
-        result = service.delete_student(student_id, current_admin)
-        if result:
-            return
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to delete student"
-            )
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete student: {str(e)}"
-        )
 
 @router.get("/students/search", response_model=List[StudentResponse])
 async def search_students(
@@ -205,3 +178,50 @@ async def search_students(
         filters.append(Student.section.ilike(f"%{query}%"))
     student_query = student_query.filter(or_(*filters))
     return student_query.all()
+@router.get("/students/{student_matric:path}", response_model=StudentResponse)
+async def get_student(
+    student_matric: str = Path(..., description="Student matric number that may contain slashes"),
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """
+    Get student by matric number (admin only).
+    Path parameter supports matric numbers containing slashes.
+    """
+    service = AdminStudentService(db)
+    student = service.get_student_by_id(student_matric)
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found"
+        )
+    return student
+
+@router.delete("/students/{student_matric:path}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_student(
+    student_matric: str = Path(..., description="Student matric number that may contain slashes"),
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """
+    Delete a student by matric number (admin only).
+    Path parameter supports matric numbers containing slashes.
+    """
+    service = AdminStudentService(db)
+    try:
+        result = service.delete_student(student_matric, current_admin)
+        if result:
+            return
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to delete student."
+            )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete student: {str(e)}"
+        )

@@ -7,7 +7,10 @@ class Student(Base):
     __tablename__ = "Student"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    Matric = Column(String,index=True)
+    Firstname= Column(String)
+    Lastname=Column(String)
+    gender=Column(String)
     course = Column(String,index=True)
     level = Column(String)
     section = Column(String)

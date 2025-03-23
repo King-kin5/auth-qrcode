@@ -44,18 +44,21 @@ class AdminStudentService:
         try:
             # Check if a student with the exact same name already exists
             existing_student = self.db.query(Student).filter(
-                Student.name == data['name']
+                Student.Matric == data['Matric']
             ).first()
             
             if existing_student:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Student '{data['name']}' is already registered"
+                    detail=f"Student '{data['Matric']}' is already registered"
                 )
             
             # Create a new student
             new_student = Student(
-                name=data['name'],
+                Matric=data['Matric'],
+                Firstname=data['Firstname'],
+                Lastname=data['Lastname'],
+                gender=data['gender'],
                 course=data['course'],
                 level=data['level'],
                 section=data['section'],
@@ -73,7 +76,10 @@ class AdminStudentService:
                 "STUDENT",
                 str(new_student.id),
                 {
-                    "name": new_student.name,
+                    "Matric":new_student.Matric,
+                    "Firstname":new_student.Firstname,
+                    "Lastname":new_student.Lastname,
+                    "gender":new_student.gender,
                     "course": new_student.course,
                     "level": new_student.level,
                     "section": new_student.section,
@@ -81,7 +87,7 @@ class AdminStudentService:
                 }
             )
             
-            self.logger.info(f"Admin {admin_user.email} registered student: {new_student.name}")
+            self.logger.info(f"Admin {admin_user.email} registered student: {new_student.Firstname,new_student.Lastname}")
             return new_student
             
         except HTTPException:
@@ -99,9 +105,9 @@ class AdminStudentService:
         """Get all registered students."""
         return self.db.query(Student).all()
     
-    def get_student_by_id(self, student_id: int) -> Optional[Student]:
+    def get_student_by_id(self, student_matric: str) -> Optional[Student]:
         """Get a student by ID."""
-        student = self.db.query(Student).filter(Student.id == student_id).first()
+        student = self.db.query(Student).filter(Student.Matric == student_matric).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
         return student
@@ -131,7 +137,7 @@ class AdminStudentService:
             self.logger.error(f"Failed to create audit log: {str(e)}")
             # Do not rollback the main transaction if audit logging fails.
 
-    def delete_student(self, student_id: int, admin_user: Admin) -> bool:
+    def delete_student(self, student_matric: str, admin_user: Admin) -> bool:
         """
         Delete a student record.
         
@@ -150,13 +156,13 @@ class AdminStudentService:
             raise HTTPException(status_code=403, detail="Admin privileges required")
             
         # Find the student
-        student = self.db.query(Student).filter(Student.id == student_id).first()
+        student = self.db.query(Student).filter(Student.Matric == student_matric).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
             
         try:
             # Store student info for audit log
-            student_name = student.name
+            student_matric = student.Matric
             
             # Delete the student
             self.db.delete(student)
@@ -167,15 +173,15 @@ class AdminStudentService:
                 admin_user.id,
                 "STUDENT_DELETED",
                 "STUDENT",
-                str(student_id),
+                str(student_matric),
                 {
-                    "name": student_name,
+                    "matric": student_matric,
                     "deleted_at": datetime.now().isoformat(),
                     "deleted_by": admin_user.email
                 }
             )
             
-            self.logger.info(f"Admin {admin_user.email} deleted student ID {student_id}")
+            self.logger.info(f"Admin {admin_user.email} deleted student  {student_matric}")
             return True
             
         except SQLAlchemyError as e:
@@ -187,7 +193,7 @@ class AdminStudentService:
             self.logger.error(f"Unexpected error deleting student: {str(e)}")
             raise HTTPException(status_code=500, detail="An error occurred during deletion")
 
-    def update_student(self, student_id: int, data: Dict[str, Any], admin_user: Admin) -> Student:
+    def update_student(self, student_matric: str, data: Dict[str, Any], admin_user: Admin) -> Student:
         """
         Update a student record.
         
@@ -207,14 +213,17 @@ class AdminStudentService:
             raise HTTPException(status_code=403, detail="Admin privileges required")
             
         # Find the student
-        student = self.db.query(Student).filter(Student.id == student_id).first()
+        student = self.db.query(Student).filter(Student.Matric == student_matric).first()
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
             
         try:
             # Store original data for audit log
             original_data = {
-                "name": student.name,
+                "Matric":student.Matric,
+                "Firstname":student.Firstname,
+                "Lastname":student.Lastname,
+                "gender":student.gender,
                 "course": student.course,
                 "level": student.level,
                 "section": student.section
@@ -222,7 +231,7 @@ class AdminStudentService:
             
             # Update allowed fields
             for field, value in data.items():
-                if field in ["name", "course", "level", "section", "qr_code"]:
+                if field in ["Matric","Firstname","Lastname","gender", "course", "level", "section", "qr_code"]:
                     setattr(student, field, value)
                     
             self.db.commit()
@@ -233,7 +242,7 @@ class AdminStudentService:
                 admin_user.id,
                 "STUDENT_UPDATED",
                 "STUDENT",
-                str(student_id),
+                str(student_matric),
                 {
                     "original_data": original_data,
                     "updated_data": data,
@@ -241,7 +250,7 @@ class AdminStudentService:
                 }
             )
             
-            self.logger.info(f"Admin {admin_user.email} updated student ID {student_id}")
+            self.logger.info(f"Admin {admin_user.email} updated student  {student_matric}")
             return student
             
         except SQLAlchemyError as e:

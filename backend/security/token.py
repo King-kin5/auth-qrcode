@@ -39,7 +39,10 @@ def verify_access_token(token: str) -> Dict[str, Any]:
         )
         logger.info("Token successfully decoded")
         return payload
-    except jwt.JWTError as e:
+    except jwt.exceptions.ExpiredSignatureError as e:
+        logger.error(f"Token expired: {e}")
+        raise AuthenticationException("Token has expired")
+    except jwt.exceptions.PyJWTError as e:  # Base exception class for all JWT errors
         logger.error(f"JWT Error during token verification: {e}")
         logger.error(f"Token details - Secret Key Length: {len(settings.SECRET_KEY)}, Algorithm: {settings.ALGORITHM}")
         raise AuthenticationException("Could not validate credentials")

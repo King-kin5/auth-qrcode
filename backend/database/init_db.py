@@ -10,7 +10,7 @@ from typing import Generator
 logger = logging.getLogger(__name__)
 
 # You should move this to a config file
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/QRcode"
+DATABASE_URL = "postgresql://username:password@localhost:5432/QRcode"
 
 # Create declarative base instance
 Base = declarative_base()

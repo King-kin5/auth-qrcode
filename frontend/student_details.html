@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Details</title>
+  <!-- Tailwind CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Font Awesome for the default icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-4xl mx-auto p-6 bg-white shadow-md mt-10 rounded">
+    <h1 class="text-3xl font-bold mb-4 text-center">Student Details</h1>
+    <div class="flex flex-col md:flex-row items-center mb-6">
+      <!-- If the student has an image, display it; otherwise, show a placeholder -->
+      {% if student.image %}
+        <img src="{{ student.image }}" alt="Student Image" class="w-40 h-40 rounded-full object-cover border-4 border-indigo-600 mr-6">
+      {% else %}
+        <div class="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center mr-6">
+          <i class="fas fa-user text-4xl text-gray-600"></i>
+        </div>
+      {% endif %}
+      <div>
+        <p class="text-xl mb-2"><span class="font-bold">Matric:</span> {{ student.Matric }}</p>
+        <p class="text-xl mb-2"><span class="font-bold">Name:</span> {{ student.Firstname }} {{ student.Lastname }}</p>
+        <p class="text-xl mb-2"><span class="font-bold">Gender:</span> {{ student.gender }}</p>
+        <p class="text-xl mb-2"><span class="font-bold">Course:</span> {{ student.course }}</p>
+        <p class="text-xl mb-2"><span class="font-bold">Year Level:</span> {{ student.level }}</p>
+        <p class="text-xl"><span class="font-bold">Section:</span> {{ student.section }}</p>
+      </div>
+    </div>
+  </div>
+  <!-- Font Awesome JS (optional, for icons) -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

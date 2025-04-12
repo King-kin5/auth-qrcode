@@ -1,8 +1,12 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from backend.admin.adminservice import AdminStudentService
+from backend.database.config import get_db
 from backend.security.config import settings
 from fastapi.exceptions import RequestValidationError, HTTPException
 from backend.api import QRroute, admin, student
@@ -81,10 +85,13 @@ def create_application() -> FastAPI:
     app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
     app.add_middleware(PasswordChangeMiddleware)
     app.add_middleware(BaseHTTPMiddleware, dispatch=authentication_middleware)  # Auth first
-    app.add_middleware(BaseHTTPMiddleware, dispatch=admin_security_middleware)  # Then admin checks
-    
     # Frontend paths setup
     frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+    
+    # Initialize templates
+    templates = Jinja2Templates(directory=frontend_path)
+    
+    # Mount static files
     
     # Mount static files
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
@@ -133,6 +140,15 @@ def create_application() -> FastAPI:
         """Serve search students page"""
         search_file = os.path.join(frontend_path, "search_students.html")
         return FileResponse(search_file)
+    @app.get("/student/{student_matric:path}")
+    async def student_details(request: Request, student_matric: str, db: Session = Depends(get_db)):
+        service = AdminStudentService(db)
+        try:
+          student = service.get_student_by_id(student_matric)
+        except Exception as e:
+            raise HTTPException(status_code=404, detail="Student not found")
+        return templates.TemplateResponse("student_details.html", {"request": request, "student": student})
+
     
     # Main index route
     @app.get("/", include_in_schema=False)

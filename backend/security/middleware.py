@@ -10,6 +10,7 @@ from starlette.types import ASGIApp
 from backend.security.permissions import is_whitelisted_ip, has_permission
 from backend.security.token import verify_access_token
 from backend.admin.service import AdminService
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -62,7 +63,8 @@ async def authentication_middleware(request: Request, call_next: RequestResponse
     if request.method == "OPTIONS":
         return await call_next(request)
     
-    # Define regex patterns for paths to exclude from authentication
+    # Define regex patterns for paths to exclude from authentication,
+    # including public student details endpoints (i.e. "/student/...")
     excluded_patterns = [
         # Auth endpoints
         re.compile(r"^/api/v1/auth/(login|signup|me|forgot-password|reset-password|google-login|refresh-token)$"),
@@ -78,12 +80,13 @@ async def authentication_middleware(request: Request, call_next: RequestResponse
         re.compile(r"^/(health|metrics|status)$"),
         re.compile(r"^/admin(?!/login).*$"),
         re.compile(r"^/admin/login$"),
-        #re.compile(r"^/admin/dashboard$"),
-        # Static files
         re.compile(r"^/static/.*$"),
         re.compile(r"^/favicon\.ico$"),
-        # Public student verification
-        re.compile(r"^/api/v1/student/verify/[^/]+$")
+        re.compile(r"^/api/v1/student/verify/[^/]+$"),
+        # Public student details page - corrected to handle all variations
+        re.compile(r"^/student(/.*)?$"),
+        # Handle typo in case it's in links elsewhere
+        re.compile(r"^/sudent(/.*)?$")
     ]
     
     path = request.url.path
@@ -119,19 +122,24 @@ async def authentication_middleware(request: Request, call_next: RequestResponse
         logger.error(f"Authentication middleware error: {e}")
         raise
 
-# Update the admin_security_middleware function in middleware.py
 async def admin_security_middleware(request: Request, call_next: RequestResponseEndpoint):
     """
     Additional security checks for admin routes
-    Verifies admin permissions, IP whitelisting, and additional security headers
+    Verifies admin permissions, IP whitelisting, and additional security headers.
+    Excludes public endpoints such as /admin/login, /admin/dashboard, and our public /student/ pages.
     """
-    # Static file and initial page load exclusions
+    # Static file and initial page load exclusions, plus public student details.
     excluded_patterns = [
         re.compile(r"^/admin/login$"),
         re.compile(r"^/admin/dashboard$"),
         re.compile(r"^/admin/register-student$"),
         re.compile(r"^/admin/view-students"),
+        re.compile(r".*placeholder\.jpg$"),
         re.compile(r"^/static/.*$"),
+        # Also exclude any path under /student/ - corrected to be more flexible
+        re.compile(r"^/student(/.*)?$"),
+        # Handle typo in case it's in links elsewhere
+        re.compile(r"^/sudent(/.*)?$")
     ]
     
     # Check if path should be excluded
@@ -196,10 +204,11 @@ async def admin_security_middleware(request: Request, call_next: RequestResponse
             raise HTTPException(status_code=500, detail="Internal security error")
     
     return await call_next(request)
+
 # In middleware.py - update the PasswordChangeMiddleware class
 class PasswordChangeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # Skip middleware for these endpoints
+        # Skip middleware for these endpoints. Note: "/student" will match public student details.
         excluded_paths = [
             "/api/v1/auth/login",
             "/api/v1/auth/change-password",
@@ -208,11 +217,16 @@ class PasswordChangeMiddleware(BaseHTTPMiddleware):
             "/api/v1/admin/login",
             "/docs",
             "/redoc",
+            "/student",
+            "/sudent",  # Handle typo in case it's in links elsewhere
             "/openapi.json",
             "/health"
         ]
         
-        if any(request.url.path.startswith(path) for path in excluded_paths):
+        # Also check if the path starts with /student/ or /sudent/ for deeper paths
+        if any(request.url.path.startswith(path) for path in excluded_paths) or \
+           request.url.path.startswith("/student/") or \
+           request.url.path.startswith("/sudent/"):
             return await call_next(request)
 
         # Check if user needs to change password

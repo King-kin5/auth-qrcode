@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+z<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,6 +7,55 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <style>
+    /* Custom animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+      }
+    }
+    
+    .student-card {
+      animation: fadeInUp 0.5s ease;
+    }
+    
+    .student-card:nth-child(2n) {
+      animation-delay: 0.1s;
+    }
+    
+    .student-card:nth-child(3n) {
+      animation-delay: 0.2s;
+    }
+    
+    /* Hover effects */
+    .student-card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Pulse animation for QR code */
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+      }
+    }
+    
+    #qrCodeDisplay svg {
+      border-radius: 4px;
+      animation: pulse 2s infinite;
+    }
+  </style>
 </head>
 <body class="bg-gray-100">
   <div class="min-h-screen flex">
@@ -16,10 +65,6 @@
         <h1 class="text-2xl font-bold">Admin Panel</h1>
       </div>
       <nav class="flex-1">
-        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="dashboard">
-          <i class="fas fa-home w-6"></i>
-          <span>Dashboard</span>
-        </a>
         <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="register">
           <i class="fas fa-user-plus w-6"></i>
           <span>Register Student</span>
@@ -27,10 +72,6 @@
         <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="view-all">
           <i class="fas fa-users w-6"></i>
           <span>View All Students</span>
-        </a>
-        <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="create-admin">
-          <i class="fas fa-user-shield w-6"></i>
-          <span>Create Admin</span>
         </a>
         <a href="#" class="nav-link flex items-center px-6 py-3 hover:bg-indigo-700 transition-colors" data-page="search">
           <i class="fas fa-search w-6"></i>
@@ -65,7 +106,7 @@
 
   <!-- Edit Student Modal -->
   <div id="editStudentModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl animate__animated animate__zoomIn">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold">Edit Student</h3>
         <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">
@@ -74,6 +115,21 @@
       </div>
       <form id="editStudentForm" class="space-y-4">
         <input type="hidden" id="editStudentMatric">
+        <div class="flex justify-center mb-6">
+          <div class="relative">
+            <div id="editImageUploadContainer" class="h-32 w-32 rounded-full flex items-center justify-center bg-indigo-100 cursor-pointer overflow-hidden hover:bg-indigo-200 transition-all">
+              <img id="editStudentImagePreview" class="h-full w-full object-cover hidden" src="" alt="Student Image">
+              <div id="editImageUploadIcon" class="text-center">
+                <i class="fas fa-camera text-3xl text-indigo-500"></i>
+                <p class="text-xs mt-1 text-indigo-500">Upload Photo</p>
+              </div>
+            </div>
+            <input type="file" id="editStudentImage" class="hidden" accept="image/*">
+            <button type="button" id="editRemoveImageBtn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition hidden">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium">Matric (readonly)</label>
@@ -120,8 +176,8 @@
           </div>
         </div>
         <div class="flex justify-end space-x-2 mt-4">
-          <button type="button" id="cancelEditBtn" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Changes</button>
+          <button type="button" id="cancelEditBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Save Changes</button>
         </div>
       </form>
       <div id="editStatusMessages" class="mt-4 hidden"></div>
@@ -144,9 +200,13 @@
   </div>
 
   <script>
-    /*====================================
+    // Global variables - declare once at the top level
+    let uploadedImageData = '';
+    let editUploadedImageData = '';
+    
+    /*==================================================
       Authentication & AJAX Setup
-    ====================================*/
+    ==================================================*/
     function checkAuth() {
       const token = localStorage.getItem('adminToken');
       if (!token) {
@@ -194,47 +254,42 @@
       if (!checkAuth()) return;
       $('#pageTitle').text(page.charAt(0).toUpperCase() + page.slice(1).replace('-', ' '));
       switch (page) {
-        case 'dashboard': loadDashboard(); break;
         case 'register': loadRegisterForm(); break;
         case 'view-all': loadAllStudents(); break;
-        case 'create-admin': loadCreateAdmin(); break;
         case 'search': loadSearchForm(); break;
-        default: loadDashboard();
+        default: loadRegisterForm();
       }
     }
 
     /*====================================
                    Dashboard
     ====================================*/
-    async function loadDashboard() {
-      try {
-        const stats = await $.ajax({
-          url: '/api/v1/admin/dashboard',
-          method: 'GET'
-        });
-        $('#mainContent').html(`
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded shadow">
-              <h3 class="text-xl font-bold">Total Students</h3>
-              <p class="text-3xl">${stats.totalStudents || 0}</p>
-            </div>
-            <!-- Additional stats cards can be added here -->
-          </div>
-        `);
-      } catch (error) {
-        $('#mainContent').html(`<div class="text-red-500">Error loading dashboard data.</div>`);
-      }
-    }
+    // Dashboard functionality removed
 
     /*====================================
                Student Registration
     ====================================*/
     function loadRegisterForm() {
       $('#mainContent').html(`
-        <div id="registrationSection">
+        <div id="registrationSection" class="animate__animated animate__fadeIn">
           <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
             <h2 class="text-2xl font-bold mb-4">Register New Student</h2>
             <form id="studentRegistrationForm" class="space-y-4">
+              <div class="flex justify-center mb-6">
+                <div class="relative">
+                  <div id="imageUploadContainer" class="h-32 w-32 rounded-full flex items-center justify-center bg-indigo-100 cursor-pointer overflow-hidden hover:bg-indigo-200 transition-all">
+                    <img id="studentImagePreview" class="h-full w-full object-cover hidden" src="" alt="Student Image">
+                    <div id="imageUploadIcon" class="text-center">
+                      <i class="fas fa-camera text-3xl text-indigo-500"></i>
+                      <p class="text-xs mt-1 text-indigo-500">Upload Photo</p>
+                    </div>
+                  </div>
+                  <input type="file" id="studentImage" class="hidden" accept="image/*">
+                  <button type="button" id="removeImageBtn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition hidden">
+                    <i class="fas fa-times text-xs"></i>
+                  </button>
+                </div>
+              </div>
               <div>
                 <label class="block text-sm font-medium">Matric</label>
                 <input type="text" id="studentMatric" class="w-full p-2 border rounded" required>
@@ -282,8 +337,8 @@
                 <input type="text" id="section" class="w-full p-2 border rounded" placeholder="e.g., A, B, C" required>
               </div>
               <div class="flex justify-end space-x-2">
-                <button type="button" id="clearFormBtn" class="px-4 py-2 bg-gray-300 rounded">Clear</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
+                <button type="button" id="clearFormBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition">Clear</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
                   <i class="fas fa-user-plus mr-1"></i> Register
                 </button>
               </div>
@@ -291,51 +346,114 @@
             <div id="statusMessages" class="mt-4 hidden"></div>
           </div>
         </div>
-        <div id="qrCodeSection" class="bg-white p-6 rounded shadow hidden">
+        <div id="qrCodeSection" class="bg-white p-6 rounded shadow hidden animate__animated animate__fadeIn">
           <div class="text-center">
-            <h2 class="text-2xl font-bold text-green-600">Registration Successful!</h2>
+            <h2 class="text-2xl font-bold text-green-600 mb-4">Registration Successful!</h2>
+            <div class="flex justify-center mb-4">
+              <img id="studentImageDisplay" class="h-32 w-32 rounded-full object-cover" src="" alt="Student Image">
+            </div>
             <p class="mb-4">Student details:</p>
             <table class="mx-auto text-left">
-              <tr><td class="font-bold">ID:</td><td id="studentIdDisplay"></td></tr>
-              <tr><td class="font-bold">Matric:</td><td id="studentMatricDisplay"></td></tr>
-              <tr><td class="font-bold">FirstName:</td><td id="studentFirstnameDisplay"></td></tr>
-              <tr><td class="font-bold">LastName:</td><td id="studentLastnameDisplay"></td></tr>
-              <tr><td class="font-bold">gender:</td><td id="studentgenderDisplay"></td></tr>
-              <tr><td class="font-bold">Course:</td><td id="studentCourseDisplay"></td></tr>
-              <tr><td class="font-bold">Year:</td><td id="studentLevelDisplay"></td></tr>
-              <tr><td class="font-bold">Section:</td><td id="studentSectionDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">ID:</td><td id="studentIdDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">Matric:</td><td id="studentMatricDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">FirstName:</td><td id="studentFirstnameDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">LastName:</td><td id="studentLastnameDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">Gender:</td><td id="studentgenderDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">Course:</td><td id="studentCourseDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">Year:</td><td id="studentLevelDisplay"></td></tr>
+              <tr><td class="font-bold pr-4">Section:</td><td id="studentSectionDisplay"></td></tr>
             </table>
-            <div id="qrCodeDisplay" class="mt-4 flex justify-center"></div>
-            <div class="mt-4 space-x-2">
-              <button id="printQrBtn" class="px-4 py-2 bg-indigo-600 text-white rounded">Print QR</button>
-              <button id="registerAnotherBtn" class="px-4 py-2 bg-gray-600 text-white rounded">Register Another</button>
+            <div id="qrCodeDisplay" class="mt-6 flex justify-center"></div>
+            <div class="mt-6 space-x-4">
+              <button id="downloadQrBtn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                <i class="fas fa-download mr-1"></i> Download QR Code
+              </button>
+              <button id="registerAnotherBtn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
+                <i class="fas fa-plus-circle mr-1"></i> Register Another
+              </button>
             </div>
           </div>
         </div>
       `);
+      // Initialize the upload handlers and clear any previous image data
+      uploadedImageData = '';
       initRegisterFormHandlers();
+      initImageUploadHandlers();
     }
-
+    
     function initRegisterFormHandlers() {
       $('#clearFormBtn').click(function() {
         $('#studentRegistrationForm')[0].reset();
         $('#statusMessages').addClass('hidden').empty();
+        // Reset image preview
+        $('#studentImagePreview').attr('src', '').addClass('hidden');
+        $('#imageUploadIcon').show();
+        $('#removeImageBtn').addClass('hidden');
       });
+      
       $('#studentRegistrationForm').on('submit', async function(e) {
         e.preventDefault();
         await registerStudent();
       });
+      
       $('#registerAnotherBtn').click(function() {
         $('#qrCodeSection').addClass('hidden');
         $('#registrationSection').removeClass('hidden');
         $('#studentRegistrationForm')[0].reset();
         $('#statusMessages').addClass('hidden').empty();
+        // Reset image preview
+        $('#studentImagePreview').attr('src', '').addClass('hidden');
+        $('#imageUploadIcon').show();
+        $('#removeImageBtn').addClass('hidden');
       });
-      $('#printQrBtn').click(function() {
-        printQRCode();
+      
+      $('#downloadQrBtn').click(function() {
+        downloadQRCode();
       });
     }
-
+    
+    function initImageUploadHandlers() {
+      $('#imageUploadContainer').off('click').on('click', function() {
+        $('#studentImage').click();
+      });
+      
+      $('#studentImage').off('change').on('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          if (file.size > 10 * 1024 * 1024) {
+            showStatusMessage('error', 'Image file size must be less than 10MB');
+            return;
+          }
+          if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+            showStatusMessage('error', 'Only JPG, PNG, and GIF images are allowed');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            uploadedImageData = e.target.result;
+            $('#studentImagePreview').attr('src', uploadedImageData).removeClass('hidden');
+            $('#imageUploadIcon').hide();
+            $('#removeImageBtn').removeClass('hidden');
+            // Clear any error messages
+            $('#statusMessages').addClass('hidden').empty();
+          };
+          reader.onerror = function() {
+            showStatusMessage('error', 'Error reading image file');
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      $('#removeImageBtn').off('click').on('click', function(e) {
+        e.stopPropagation(); // Prevent triggering the container click
+        uploadedImageData = '';
+        $('#studentImagePreview').attr('src', '').addClass('hidden');
+        $('#imageUploadIcon').show();
+        $('#removeImageBtn').addClass('hidden');
+        $('#studentImage').val(''); // Clear the file input
+      });
+    }
+    
     async function registerStudent() {
       showStatusMessage('loading', 'Registering student...');
       const data = {
@@ -345,7 +463,8 @@
         gender: $('#studentgender').val(),
         course: $('#course').val(),
         level: $('#level').val(),
-        section: $('#section').val().trim()
+        section: $('#section').val().trim(),
+        image: uploadedImageData || null // Add the image data if available
       };
       try {
         const student = await $.ajax({
@@ -392,7 +511,7 @@
 
     function displayStudentWithQR(student) {
       $('#registrationSection').addClass('hidden');
-      $('#qrCodeSection').removeClass('hidden');
+      $('#qrCodeSection').removeClass('hidden').addClass('animate__animated animate__fadeIn');
       $('#studentIdDisplay').text(student.id);
       $('#studentMatricDisplay').text(student.Matric);
       $('#studentFirstnameDisplay').text(student.Firstname);
@@ -401,164 +520,229 @@
       $('#studentCourseDisplay').text(student.course);
       $('#studentLevelDisplay').text(student.level);
       $('#studentSectionDisplay').text(student.section);
+      
+      if (student.image) {
+        $('#studentImageDisplay').attr('src', student.image).show();
+      } else {
+        $('#studentImageDisplay').hide();
+        $('#studentImageDisplay').after('<div class="mx-auto h-32 w-32 bg-indigo-100 rounded-full flex items-center justify-center"><i class="fas fa-user text-4xl text-indigo-500"></i></div>');
+      }
+      
+      // Construct the URL pointing to the student's information page
+      const studentUrl = window.location.origin + '/student/' + student.Matric;
+      console.log('Generating QR for URL:', studentUrl); // Log the URL
+      
+    
+      
       $.ajax({
         url: '/qr/generate',
         method: 'POST',
         data:{
-          content: JSON.stringify({
-            Matric: student.Matric,
-            Firstname: student.Firstname,
-            Lastname: student.Lastname,
-            gender: student.gender,
-            course: student.course,
-            level: student.level,
-            section: student.section
-          }),
+          content: studentUrl,
           size: 10
-        }
+        } // Ensure we send JSON
+        
       }).then(response => {
         if(response.svg) {
           $('#qrCodeDisplay').html(response.svg);
+          // Enable download button
+          $('#downloadQrBtn').prop('disabled', false).removeClass('opacity-50');
         } else {
           $('#qrCodeDisplay').html('<div class="text-red-500">QR Code generation failed</div>');
+          $('#downloadQrBtn').prop('disabled', true).addClass('opacity-50');
         }
       }).catch(error => {
         $('#qrCodeDisplay').html('<div class="text-red-500">QR Code generation failed</div>');
+        $('#downloadQrBtn').prop('disabled', true).addClass('opacity-50');
       });
     }
+    
+    function downloadQRCode() {
+      const qrCodeElement = document.querySelector('#qrCodeDisplay svg');
+      if (!qrCodeElement) {
+        console.error("QR code element not found");
+        return;
+      }
 
-    function printQRCode() {
-      const printWin = window.open('', '_blank');
-      const studentInfo = `
-        <div style="text-align:center; font-family: Arial, sans-serif; margin-bottom: 20px;">
-          <h2>${$('#studentFirstnameDisplay').text()} ${$('#studentLastnameDisplay').text()}</h2>
-          <p>Matric: ${$('#studentMatricDisplay').text()}</p>
-          <p>FirstName: ${$('#studentFirstnameDisplay').text()}</p>
-          <p>LastName: ${$('#studentLastnameDisplay').text()}</p>
-          <p>Gender: ${$('#studentgenderDisplay').text()}</p>
-          <p>Course: ${$('#studentCourseDisplay').text()}</p>
-          <p>Year: ${$('#studentLevelDisplay').text()}</p>
-          <p>Section: ${$('#studentSectionDisplay').text()}</p>
-        </div>
-      `;
-      printWin.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Print QR Code</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-            @media print { @page { size: 80mm 100mm; margin: 0; } }
-          </style>
-        </head>
-        <body>
-          ${studentInfo}
-          ${$('#qrCodeDisplay').html()}
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.print();
-                window.close();
-              }, 500);
-            };
-          <\/script>
-        </body>
-        </html>
-      `);
-      printWin.document.close();
+      try {
+        // Make the SVG render properly on the canvas by setting dimensions explicitly
+        const svgData = new XMLSerializer().serializeToString(qrCodeElement);
+        const svgWidth = qrCodeElement.width.baseVal.value || 200;
+        const svgHeight = qrCodeElement.height.baseVal.value || 200;
+        
+        // Create a sized canvas
+        const canvas = document.createElement('canvas');
+        const scale = 3; // Scale up for better quality
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        
+        // Create a Blob with the SVG data
+        const blob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        
+        // Draw on canvas when image loads
+        const img = new Image();
+        img.onload = function() {
+          // Draw white background first
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Draw the QR code
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          
+          // Create downloadable PNG
+          try {
+            const pngUrl = canvas.toDataURL('image/png');
+            
+            // Force download via dynamic link
+            const a = document.createElement('a');
+            const studentMatric = $('#studentMatricDisplay').text();
+            a.download = `student_qr_code_${studentMatric || 'download'}.png`;
+            a.href = pngUrl;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (e) {
+            console.error("Error in canvas conversion", e);
+            alert("Failed to download QR code. Please try again.");
+          }
+        };
+        
+        img.onerror = function(e) {
+          console.error("Image loading error", e);
+          URL.revokeObjectURL(url);
+          alert("Failed to process QR code for download.");
+        };
+        
+        img.src = url;
+      } catch (e) {
+        console.error("QR code download failed", e);
+        alert("QR code download failed. Please try again.");
+      }
     }
 
     /*====================================
                  View All Students
     ====================================*/
-    async function loadAllStudents() {
-      try {
-        const students = await $.ajax({
-          url: '/api/v1/admin/students',
-          method: 'GET'
-        });
-        let tableRows = '';
-        students.forEach(s => {
-          tableRows += `
-            <tr class="hover:bg-gray-100">
-              <td class="px-4 py-2">${s.id || ''}</td>
-              <td class="px-4 py-2">${s.Matric}</td>
-              <td class="px-4 py-2">${s.Firstname}</td>
-              <td class="px-4 py-2">${s.Lastname}</td>
-              <td class="px-4 py-2">${s.gender}</td>
-              <td class="px-4 py-2">${s.course}</td>
-              <td class="px-4 py-2">${s.level}</td>
-              <td class="px-4 py-2">${s.section}</td>
-              <td class="px-4 py-2 text-right">
-                <button class="view-btn text-blue-600 mr-2" data-matric="${s.Matric}">
-                  <i class="fas fa-eye"></i>
+    function loadAllStudents() {
+      $('#mainContent').html(`
+        <div class="bg-white p-6 rounded shadow animate__animated animate__fadeIn">
+          <h2 class="text-2xl font-bold mb-6">All Students</h2>
+          <div id="studentList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+      `);
+      
+      $.ajax({
+        url: '/api/v1/admin/students',
+        method: 'GET',
+        success: function(students) {
+          const studentList = document.getElementById('studentList');
+          studentList.innerHTML = '';
+          
+          if (students.length === 0) {
+            studentList.innerHTML = `
+              <div class="col-span-full text-center py-8">
+                <i class="fas fa-users text-gray-300 text-5xl mb-3"></i>
+                <p class="text-gray-500">No students registered yet</p>
+              </div>
+            `;
+            return;
+          }
+          
+          students.forEach(student => {
+            const studentCard = document.createElement('div');
+            studentCard.className = 'student-card bg-white p-4 rounded shadow border border-gray-200 hover:shadow-lg transition-all transform hover:-translate-y-1 duration-200';
+            studentCard.innerHTML = `
+              <div class="student-image-container flex justify-center mb-4">
+                ${student.image ? 
+                  `<img src="${student.image}" alt="${student.Firstname}" class="h-24 w-24 rounded-full object-cover">` :
+                  `<div class="h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-4xl text-indigo-500"></i>
+                  </div>`
+                }
+              </div>
+              <div class="student-info text-center mb-4">
+                <h3 class="text-lg font-semibold">${student.Firstname} ${student.Lastname}</h3>
+                <p class="text-sm text-gray-600"><strong>Matric:</strong> ${student.Matric}</p>
+                <p class="text-sm text-gray-600"><strong>Course:</strong> ${student.course}</p>
+                <p class="text-sm text-gray-600"><strong>Level:</strong> ${student.level}</p>
+              </div>
+              <div class="student-actions flex justify-center space-x-2">
+                <button onclick="viewStudentDetails(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                  <i class="fas fa-eye"></i> View
                 </button>
-                <button class="edit-btn text-yellow-600 mr-2" data-matric="${s.Matric}">
-                  <i class="fas fa-edit"></i>
+                <button onclick="editStudent(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                  <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="delete-btn text-red-600" data-matric="${s.Matric}">
-                  <i class="fas fa-trash"></i>
+                <button onclick="deleteStudent('${student.Matric}')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition">
+                  <i class="fas fa-trash"></i> Delete
                 </button>
-              </td>
-            </tr>
-          `;
-        });
-        $('#mainContent').html(`
-          <div class="bg-white p-6 rounded shadow">
-            <h2 class="text-2xl font-bold mb-4">All Students</h2>
-            <div class="overflow-x-auto">
-              <table class="min-w-full">
-                <thead>
-                  <tr class="bg-gray-200">
-                    <th class="px-4 py-2">ID</th>
-                    <th class="px-4 py-2">Matric</th>
-                    <th class="px-4 py-2">FirstName</th>
-                    <th class="px-4 py-2">LastName</th>
-                    <th class="px-4 py-2">Gender</th>
-                    <th class="px-4 py-2">Course</th>
-                    <th class="px-4 py-2">Year</th>
-                    <th class="px-4 py-2">Section</th>
-                    <th class="px-4 py-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${tableRows}
-                </tbody>
-              </table>
+              </div>
+            `;
+            studentList.appendChild(studentCard);
+          });
+        },
+        error: function() {
+          $('#studentList').html(`
+            <div class="col-span-full">
+              <div class="text-red-500">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                Error loading students. Please try again.
+              </div>
             </div>
-          </div>
-        `);
-        $('.view-btn').click(function() {
-          const matric = $(this).data('matric');
-          viewStudentDetails(matric);
-        });
-        $('.edit-btn').click(function() {
-          const matric = $(this).data('matric');
-          openEditModal(matric);
-        });
-        $('.delete-btn').click(function() {
-          const matric = $(this).data('matric');
-          openDeleteConfirmation(matric);
-        });
-      } catch (error) {
-        $('#mainContent').html('<div class="text-red-500">Error loading students.</div>');
-      }
+          `);
+        }
+      });
     }
 
     /*====================================
              View Student Details
     ====================================*/
-    async function viewStudentDetails(studentMatric) {
+    async function viewStudentDetails(student) {
       try {
-        const student = await $.ajax({
-          url: `/api/v1/admin/students/${studentMatric}`,
-          method: 'GET'
-        });
+        // If student object is passed as a matric string, fetch the student data.
+        if (typeof student === 'string') {
+          student = await $.ajax({
+            url: `/api/v1/admin/students/${student}`,
+            method: 'GET'
+          });
+        }
         
-        // Create a more attractive student details view
+        // Build student image HTML.
+        const studentImage = student.image ? 
+          `<img src="${student.image}" alt="${student.Firstname}" class="h-32 w-32 rounded-full object-cover">` : 
+          `<div class="h-32 w-32 bg-indigo-100 rounded-full flex items-center justify-center">
+             <i class="fas fa-user text-4xl text-indigo-500"></i>
+           </div>`;
+
+        // Construct a URL pointing to the public student details page.
+        const studentUrl = window.location.origin + '/student/' + student.Matric;
+        
+        // Generate QR code by sending the URL as a JSON payload.
+        const qrResponse = await $.ajax({
+          url: '/qr/generate',
+          method: 'POST',
+          data: JSON.stringify({
+            content: studentUrl,
+            size: 10
+          }),
+          contentType: 'application/json'
+        });
+
+        // If the response contains an SVG, wrap it in a container for later access.
+        let qrCodeHtml = '';
+        if (qrResponse && qrResponse.svg) {
+          qrCodeHtml = `<div id="qrCodeContainer">${qrResponse.svg}</div>`;
+        } else {
+          qrCodeHtml = '<div class="text-red-500">QR Code generation failed</div>';
+        }
+        
+        // Build the modal HTML.
         const detailsHtml = `
-          <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full">
+          <div id="studentDetailsModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 animate__animated animate__fadeIn">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full animate__animated animate__zoomIn">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold">Student Details</h3>
                 <button class="close-details text-gray-500 hover:text-gray-700">
@@ -567,9 +751,7 @@
               </div>
               <div class="space-y-4">
                 <div class="flex justify-center mb-4">
-                  <div class="h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user text-4xl text-indigo-500"></i>
-                  </div>
+                  ${studentImage}
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <div class="font-medium">Matric:</div>
@@ -585,8 +767,19 @@
                   <div class="font-medium">Section:</div>
                   <div>${student.section}</div>
                 </div>
+                <div class="mt-4">
+                  <h4 class="font-medium mb-2">QR Code:</h4>
+                  <div class="flex justify-center" id="qrCodeWrapper">
+                    ${qrCodeHtml}
+                  </div>
+                  <div class="flex justify-center mt-4">
+                    <button onclick="downloadStudentQRCode('${student.Matric}')" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                      <i class="fas fa-download mr-1"></i> Download QR Code
+                    </button>
+                  </div>
+                </div>
                 <div class="flex justify-end mt-4">
-                  <button class="close-details px-4 py-2 bg-indigo-600 text-white rounded">Close</button>
+                  <button class="close-details px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">Close</button>
                 </div>
               </div>
             </div>
@@ -594,181 +787,50 @@
         `;
         
         $('body').append(detailsHtml);
-        $('.close-details').click(function() {
-          $(this).closest('.fixed').remove();
+        $('.close-details').off('click').on('click', function() {
+          $('#studentDetailsModal').remove();
         });
       } catch (error) {
+        console.error('Error loading student details:', error);
         alert("Failed to load student details.");
       }
     }
 
-    /*====================================
-          Edit Student Functionality
-    ====================================*/
-    async function openEditModal(studentMatric) {
-      try {
-        const student = await $.ajax({
-          url: `/api/v1/admin/students/${studentMatric}`,
-          method: 'GET'
-        });
+    function downloadStudentQRCode(matric) {
+      // Select the SVG element from our designated container.
+      const qrCodeElement = document.querySelector('#qrCodeContainer svg');
+      if (!qrCodeElement) return;
+
+      // Create a canvas and get its context.
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      // Use the SVG's bounding box to set canvas dimensions.
+      const bbox = qrCodeElement.getBBox();
+      canvas.width = bbox.width;
+      canvas.height = bbox.height;
+      
+      // Serialize the SVG into a string.
+      const svgData = new XMLSerializer().serializeToString(qrCodeElement);
+      const img = new Image();
+      const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(svgBlob);
+      
+      // Once the image loads, draw it on the canvas.
+      img.onload = function() {
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
         
-        // Populate form fields
-        $('#editStudentMatric').val(studentMatric);
-        $('#editMatric').val(student.Matric);
-        $('#editFirstname').val(student.Firstname);
-        $('#editLastname').val(student.Lastname);
-        $('#editGender').val(student.gender);
-        $('#editCourse').val(student.course);
-        $('#editLevel').val(student.level);
-        $('#editSection').val(student.section);
-        
-        // Show modal
-        $('#editStudentModal').removeClass('hidden').addClass('flex');
-        
-        // Setup event handlers
-        $('#closeEditModal, #cancelEditBtn').off('click').on('click', function() {
-          $('#editStudentModal').removeClass('flex').addClass('hidden');
-          $('#editStatusMessages').addClass('hidden');
-        });
-        
-        $('#editStudentForm').off('submit').on('submit', async function(e) {
-          e.preventDefault();
-          await updateStudent(studentMatric);
-        });
-      } catch (error) {
-        alert("Failed to load student details for editing.");
-      }
-    }
-    
-    async function updateStudent(studentMatric) {
-      const data = {
-        Firstname: $('#editFirstname').val().trim(),
-        Lastname: $('#editLastname').val().trim(),
-        gender: $('#editGender').val(),
-        course: $('#editCourse').val(),
-        level: $('#editLevel').val(),
-        section: $('#editSection').val().trim()
+        // Convert the canvas content to a PNG data URL.
+        const pngUrl = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pngUrl;
+        downloadLink.download = `student_qr_code_${matric}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
       };
-      
-      try {
-        showEditStatusMessage('loading', 'Updating student information...');
-        
-        await $.ajax({
-          url: `/api/v1/admin/students/${studentMatric}`,
-          method: 'PUT',
-          contentType: 'application/json',
-          data: JSON.stringify(data)
-        });
-        
-        showEditStatusMessage('success', 'Student updated successfully!');
-        
-        setTimeout(() => {
-          $('#editStudentModal').removeClass('flex').addClass('hidden');
-          // Reload student list to show changes
-          loadAllStudents();
-        }, 1500);
-      } catch (error) {
-        let msg = 'Failed to update student';
-        if (error.responseJSON && error.responseJSON.detail) {
-          msg = error.responseJSON.detail;
-        }
-        showEditStatusMessage('error', msg);
-      }
-    }
-    
-    function showEditStatusMessage(type, message) {
-      const statusDiv = $('#editStatusMessages');
-      let icon = '', bgClass = '';
-      switch (type) {
-        case 'loading':
-          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
-          bgClass = 'bg-blue-100 text-blue-800';
-          break;
-        case 'success':
-          icon = '<i class="fas fa-check-circle mr-2"></i>';
-          bgClass = 'bg-green-100 text-green-800';
-          break;
-        case 'error':
-          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
-          bgClass = 'bg-red-100 text-red-800';
-          break;
-        default:
-          icon = '<i class="fas fa-info-circle mr-2"></i>';
-          bgClass = 'bg-gray-100 text-gray-800';
-      }
-      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
-    }
-
-    /*====================================
-          Delete Student Functionality
-    ====================================*/
-    function openDeleteConfirmation(studentMatric) {
-      $('#confirmDeleteBtn').data('matric', studentMatric);
-      $('#confirmMessage').text(`Are you sure you want to delete student with Matric: ${studentMatric}?`);
-      $('#confirmationModal').removeClass('hidden').addClass('flex');
-      
-      $('#cancelDeleteBtn').off('click').on('click', function() {
-        $('#confirmationModal').removeClass('flex').addClass('hidden');
-      });
-      
-      $('#confirmDeleteBtn').off('click').on('click', async function() {
-        const matric = $(this).data('matric');
-        await deleteStudent(matric);
-      });
-    }
-    
-    async function deleteStudent(studentMatric) {
-      try {
-        const encodedMatric = encodeURIComponent(studentMatric);
-        $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin mr-1"></i> Deleting...');
-        $('#confirmDeleteBtn').prop('disabled', true);
-        
-        await $.ajax({
-          url: `/api/v1/admin/students/${encodedMatric}`,
-          method: 'DELETE'
-        });
-        
-        // Reset button state before hiding modal
-        $('#confirmDeleteBtn').html('Delete');
-        $('#confirmDeleteBtn').prop('disabled', false);
-    
-        $('#confirmationModal').removeClass('flex').addClass('hidden');
-
-        // Show success message
-        const alertHtml = `
-          <div class="fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-md" id="deleteAlert">
-            <div class="flex">
-              <div class="py-1"><i class="fas fa-check-circle"></i></div>
-              <div class="ml-3">
-                <p class="font-medium">Student deleted successfully!</p>
-              </div>
-              <div class="ml-auto pl-3">
-                <button class="close-alert"><i class="fas fa-times"></i></button>
-              </div>
-            </div>
-          </div>
-        `;
-        $('body').append(alertHtml);
-        
-        setTimeout(() => {
-          $('#deleteAlert').remove();
-          loadAllStudents(); // Reload student list
-        }, 2000);
-        
-        $('.close-alert').click(function() {
-          $('#deleteAlert').remove();
-        });
-      } catch (error) {
-        $('#confirmDeleteBtn').html('Delete');
-        $('#confirmDeleteBtn').prop('disabled', false);
-        
-        let errorMsg = 'Failed to delete student';
-        if (error.responseJSON && error.responseJSON.detail) {
-          errorMsg = error.responseJSON.detail;
-        }
-        
-        $('#confirmMessage').html(`<div class="text-red-500 mt-2">${errorMsg}</div>`);
-      }
+      img.src = url;
     }
 
     /*====================================
@@ -776,22 +838,26 @@
     ====================================*/
     function loadSearchForm() {
       $('#mainContent').html(`
-        <div class="bg-white p-6 rounded shadow">
+        <div class="bg-white p-6 rounded shadow animate__animated animate__fadeIn">
           <h2 class="text-2xl font-bold mb-4">Search Students</h2>
           <form id="searchForm" class="mb-6">
             <div class="flex space-x-4">
-              <div class="flex-1">
-                <input type="text" id="searchQuery" class="w-full p-2 border rounded" 
+              <div class="flex-1 relative">
+                <input type="text" id="searchQuery" class="w-full p-3 pl-10 border rounded" 
                   placeholder="Search by Matric, Name, Course, or Level">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
               </div>
-              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
-                <i class="fas fa-search mr-1"></i> Search
+              <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                Search
               </button>
             </div>
           </form>
           
-          <div id="searchResults" class="mt-4">
-            <p class="text-gray-500">Enter search terms above to find students.</p>
+          <div id="searchResults" class="mt-6">
+            <div class="flex flex-col items-center justify-center py-8 text-gray-500">
+              <i class="fas fa-search text-5xl mb-4 text-indigo-200"></i>
+              <p>Enter search terms above to find students.</p>
+            </div>
           </div>
         </div>
       `);
@@ -800,19 +866,31 @@
         e.preventDefault();
         await searchStudents();
       });
+      
+      // Add animation to search input
+      $('#searchQuery').on('focus', function() {
+        $(this).addClass('ring-2 ring-indigo-300 transition-all');
+      }).on('blur', function() {
+        $(this).removeClass('ring-2 ring-indigo-300');
+      });
     }
     
     async function searchStudents() {
       const query = $('#searchQuery').val().trim();
       if (!query) {
-        $('#searchResults').html('<p class="text-yellow-500">Please enter a search term.</p>');
+        $('#searchResults').html(`
+          <div class="flex flex-col items-center justify-center py-8 bg-yellow-50 rounded text-yellow-700">
+            <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+            <p>Please enter a search term.</p>
+          </div>
+        `);
         return;
       }
       
       try {
         $('#searchResults').html(`
-          <div class="flex justify-center">
-            <i class="fas fa-spinner fa-spin text-indigo-600 text-3xl"></i>
+          <div class="flex justify-center items-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
         `);
         
@@ -836,189 +914,71 @@
         });
         
         if (filteredStudents.length === 0) {
-          $('#searchResults').html('<p class="text-gray-500">No students found matching your search criteria.</p>');
+          $('#searchResults').html(`
+            <div class="flex flex-col items-center justify-center py-8 bg-gray-50 rounded">
+              <i class="fas fa-search text-4xl mb-3 text-gray-300"></i>
+              <p class="text-gray-600">No students found matching your search criteria.</p>
+            </div>
+          `);
           return;
         }
         
-        let tableRows = '';
-        filteredStudents.forEach(s => {
-          tableRows += `
-            <tr class="hover:bg-gray-100">
-              <td class="px-4 py-2">${s.Matric}</td>
-              <td class="px-4 py-2">${s.Firstname}</td>
-              <td class="px-4 py-2">${s.Lastname}</td>
-              <td class="px-4 py-2">${s.gender}</td>
-              <td class="px-4 py-2">${s.course}</td>
-              <td class="px-4 py-2">${s.level}</td>
-              <td class="px-4 py-2">${s.section}</td>
-              <td class="px-4 py-2 text-right">
-                <button class="view-btn text-blue-600 mr-2" data-matric="${s.Matric}">
-                  <i class="fas fa-eye"></i>
+        let searchResultsHTML = `
+          <h3 class="text-lg font-semibold mb-4">Search Results (${filteredStudents.length})</h3>
+          <div id="searchResultsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        `;
+        
+        filteredStudents.forEach(student => {
+          searchResultsHTML += `
+            <div class="student-card bg-white p-4 rounded shadow border border-gray-200 hover:shadow-lg transition-all transform hover:-translate-y-1 duration-200 animate__animated animate__fadeIn">
+              <div class="student-image-container flex justify-center mb-4">
+                ${student.image ? 
+                  `<img src="${student.image}" alt="${student.Firstname}" class="h-24 w-24 rounded-full object-cover">` :
+                  `<div class="h-24 w-24 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-4xl text-indigo-500"></i>
+                  </div>`
+                }
+              </div>
+              <div class="student-info text-center mb-4">
+                <h3 class="text-lg font-semibold">${student.Firstname} ${student.Lastname}</h3>
+                <p class="text-sm text-gray-600"><strong>Matric:</strong> ${student.Matric}</p>
+                <p class="text-sm text-gray-600"><strong>Course:</strong> ${student.course}</p>
+                <p class="text-sm text-gray-600"><strong>Level:</strong> ${student.level}</p>
+              </div>
+              <div class="student-actions flex justify-center space-x-2">
+                <button onclick="viewStudentDetails(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                  <i class="fas fa-eye"></i> View
                 </button>
-                <button class="edit-btn text-yellow-600 mr-2" data-matric="${s.Matric}">
-                  <i class="fas fa-edit"></i>
+                <button onclick="editStudent(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                  <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="delete-btn text-red-600" data-matric="${s.Matric}">
-                  <i class="fas fa-trash"></i>
+                <button onclick="deleteStudent('${student.Matric}')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition">
+                  <i class="fas fa-trash"></i> Delete
                 </button>
-              </td>
-            </tr>
+              </div>
+            </div>
           `;
         });
         
+        searchResultsHTML += `</div>`;
+        $('#searchResults').html(searchResultsHTML);
+      } catch (error) {
         $('#searchResults').html(`
-          <h3 class="text-lg font-semibold mb-2">Search Results (${filteredStudents.length})</h3>
-          <div class="overflow-x-auto">
-            <table class="min-w-full">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th class="px-4 py-2">Matric</th>
-                  <th class="px-4 py-2">FirstName</th>
-                  <th class="px-4 py-2">LastName</th>
-                  <th class="px-4 py-2">Gender</th>
-                  <th class="px-4 py-2">Course</th>
-                  <th class="px-4 py-2">Year</th>
-                  <th class="px-4 py-2">Section</th>
-                  <th class="px-4 py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
+          <div class="flex flex-col items-center justify-center py-8 bg-red-50 rounded text-red-700">
+            <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+            <p>Error searching for students. Please try again.</p>
           </div>
         `);
-        
-        // Add event listeners to action buttons
-        $('.view-btn').click(function() {
-          const matric = $(this).data('matric');
-          viewStudentDetails(matric);
-        });
-        $('.edit-btn').click(function() {
-          const matric = $(this).data('matric');
-          openEditModal(matric);
-        });
-        $('.delete-btn').click(function() {
-          const matric = $(this).data('matric');
-          openDeleteConfirmation(matric);
-        });
-      } catch (error) {
-        $('#searchResults').html('<p class="text-red-500">Error searching for students. Please try again.</p>');
       }
-    }
+    }    
 
     /*====================================
-              Create Admin User
+          Edit Student Shortcut Function
     ====================================*/
-    function loadCreateAdmin() {
-      $('#mainContent').html(`
-        <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
-          <h2 class="text-2xl font-bold mb-4">Create Admin User</h2>
-          <form id="createAdminForm" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium">Full Name</label>
-              <input type="text" id="adminName" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Email</label>
-              <input type="email" id="adminEmail" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Password</label>
-              <input type="password" id="adminPassword" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Confirm Password</label>
-              <input type="password" id="confirmPassword" class="w-full p-2 border rounded" required>
-            </div>
-            <div>
-              <label class="block text-sm font-medium">Admin Type</label>
-              <select id="adminType" class="w-full p-2 border rounded" required>
-                <option value="full">Full Access</option>
-                <option value="limited">Limited Access</option>
-              </select>
-            </div>
-            <div class="flex justify-end space-x-2">
-              <button type="button" id="clearAdminFormBtn" class="px-4 py-2 bg-gray-300 rounded">Clear</button>
-              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded">
-                <i class="fas fa-user-shield mr-1"></i> Create Admin
-              </button>
-            </div>
-          </form>
-          <div id="adminStatusMessages" class="mt-4 hidden"></div>
-        </div>
-      `);
-      
-      $('#clearAdminFormBtn').click(function() {
-        $('#createAdminForm')[0].reset();
-        $('#adminStatusMessages').addClass('hidden').empty();
-      });
-      
-      $('#createAdminForm').on('submit', async function(e) {
-        e.preventDefault();
-        // Password validation
-        const password = $('#adminPassword').val();
-        const confirmPassword = $('#confirmPassword').val();
-        
-        if (password !== confirmPassword) {
-          showAdminStatusMessage('error', 'Passwords do not match');
-          return;
-        }
-        
-        await createAdminUser();
-      });
-    }
-    
-    async function createAdminUser() {
-      showAdminStatusMessage('loading', 'Creating admin user...');
-      
-      const data = {
-        name: $('#adminName').val().trim(),
-        email: $('#adminEmail').val().trim(),
-        password: $('#adminPassword').val(),
-        is_full_access: $('#adminType').val() === 'full'
-      };
-      
-      try {
-        await $.ajax({
-          url: '/api/v1/admin/create',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify(data)
-        });
-        
-        showAdminStatusMessage('success', 'Admin user created successfully!');
-        $('#createAdminForm')[0].reset();
-      } catch (error) {
-        let msg = 'Failed to create admin user';
-        if (error.responseJSON && error.responseJSON.detail) {
-          msg = error.responseJSON.detail;
-        }
-        showAdminStatusMessage('error', msg);
-      }
-    }
-    
-    function showAdminStatusMessage(type, message) {
-      const statusDiv = $('#adminStatusMessages');
-      let icon = '', bgClass = '';
-      switch (type) {
-        case 'loading':
-          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
-          bgClass = 'bg-blue-100 text-blue-800';
-          break;
-        case 'success':
-          icon = '<i class="fas fa-check-circle mr-2"></i>';
-          bgClass = 'bg-green-100 text-green-800';
-          break;
-        case 'error':
-          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
-          bgClass = 'bg-red-100 text-red-800';
-          break;
-        default:
-          icon = '<i class="fas fa-info-circle mr-2"></i>';
-          bgClass = 'bg-gray-100 text-gray-800';
-      }
-      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
+    function editStudent(student) {
+      // If a student object is passed, extract the matric number
+      const matric = typeof student === 'string' ? student : student.Matric;
+      openEditModal(matric);
     }
 
     /*====================================
@@ -1030,7 +990,8 @@
       if (checkAuth()) {
         verifySession().then(valid => {
           if (valid) {
-            loadPage('dashboard');
+            // Default page is now register instead of dashboard
+            loadPage('register');
           }
         });
       }
@@ -1045,6 +1006,15 @@
         localStorage.removeItem('adminToken');
         window.location.href = '/admin/login';
       });
+      
+      // Add active class to sidebar links
+      $('.nav-link').on('click', function() {
+        $('.nav-link').removeClass('bg-indigo-700');
+        $(this).addClass('bg-indigo-700');
+      });
+      
+      // Set initial active link
+      $('.nav-link[data-page="register"]').addClass('bg-indigo-700');
     });
   </script>
 </body>

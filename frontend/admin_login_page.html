@@ -36,13 +36,8 @@
     </div>
 
     <script>
-        // Check if already logged in
-        document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('adminToken');
-            if (token) {
-                window.location.href = '/admin/dashboard';
-            }
-        });
+        // Clear token when the page loads
+        localStorage.removeItem('adminToken');
 
         $(document).ready(function() {
             $('#loginForm').on('submit', async function(e) {
@@ -69,7 +64,7 @@
                         // Store the token
                         localStorage.setItem('adminToken', response.access_token);
                         
-                        // Redirect to admin dashboard using the correct path
+                        // Redirect to admin dashboard
                         window.location.href = '/admin/dashboard';
                     } else {
                         throw new Error('Invalid response from server');
@@ -94,6 +89,11 @@
                         .removeClass('hidden');
                 }
             });
+        });
+
+        // Clear token when the page is unloaded (user leaves or closes the page)
+        window.addEventListener('beforeunload', function() {
+            localStorage.removeItem('adminToken');
         });
     </script>
 </body>

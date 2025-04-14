@@ -216,6 +216,38 @@ z<!DOCTYPE html>
       return true;
     }
 
+    async function verifySession() {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          window.location.href = '/admin/login';
+          return false;
+        }
+
+        const response = await $.ajax({
+          url: '/api/v1/admin/me',
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response || !response.email) {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
+          return false;
+        }
+
+        $('#adminEmail').text(response.email);
+        return true;
+      } catch (error) {
+        console.error("Session verification failed:", error);
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin/login';
+        return false;
+      }
+    }
+
     function setupAjax() {
       $.ajaxSetup({
         beforeSend: function(xhr) {
@@ -231,20 +263,6 @@ z<!DOCTYPE html>
           }
         }
       });
-    }
-
-    async function verifySession() {
-      try {
-        const response = await $.ajax({
-          url: '/api/v1/admin/me',
-          method: 'GET'
-        });
-        $('#adminEmail').text(response.email);
-        return true;
-      } catch (error) {
-        console.error("Session verification failed:", error);
-        return false;
-      }
     }
 
     /*====================================
@@ -1266,14 +1284,14 @@ z<!DOCTYPE html>
     $(document).ready(function() {
       setupAjax();
       
-      if (checkAuth()) {
-        verifySession().then(valid => {
-          if (valid) {
-            // Default page is now register instead of dashboard
-            loadPage('register');
-          }
-        });
-      }
+      // Always verify session on page load
+      verifySession().then(valid => {
+        if (!valid) {
+          return;
+        }
+        // Default page is now register instead of dashboard
+        loadPage('register');
+      });
       
       $('.nav-link').click(function(e) {
         e.preventDefault();

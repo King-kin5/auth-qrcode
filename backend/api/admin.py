@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Any, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status,Path
+from fastapi import APIRouter, Depends, HTTPException, status,Path, Body
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -224,6 +224,30 @@ async def delete_student(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete student: {str(e)}"
+        )
+
+@router.put("/students/{student_matric:path}", response_model=StudentResponse)
+async def update_student(
+    student_matric: str = Path(..., description="Student matric number that may contain slashes"),
+    student_data: StudentCreate = Body(...),
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin)
+):
+    """
+    Update a student's details by matric number (admin only).
+    Path parameter supports matric numbers containing slashes.
+    """
+    service = AdminStudentService(db)
+    try:
+        student = service.update_student(student_matric, student_data.dict(), current_admin)
+        return student
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update student: {str(e)}"
         )
     
     

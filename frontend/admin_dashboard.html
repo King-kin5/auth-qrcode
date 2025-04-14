@@ -670,9 +670,6 @@ z<!DOCTYPE html>
                 <p class="text-sm text-gray-600"><strong>Level:</strong> ${student.level}</p>
               </div>
               <div class="student-actions flex justify-center space-x-2">
-                <button onclick="viewStudentDetails(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                  <i class="fas fa-eye"></i> View
-                </button>
                 <button onclick="editStudent(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
                   <i class="fas fa-edit"></i> Edit
                 </button>
@@ -946,13 +943,13 @@ z<!DOCTYPE html>
                 <p class="text-sm text-gray-600"><strong>Level:</strong> ${student.level}</p>
               </div>
               <div class="student-actions flex justify-center space-x-2">
-                <button onclick="viewStudentDetails(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+                <button class="view-student-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition" data-student='${JSON.stringify(student).replace(/'/g, "&apos;")}'>
                   <i class="fas fa-eye"></i> View
                 </button>
-                <button onclick="editStudent(${JSON.stringify(student).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition">
+                <button class="edit-student-btn px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition" data-student='${JSON.stringify(student).replace(/'/g, "&apos;")}'>
                   <i class="fas fa-edit"></i> Edit
                 </button>
-                <button onclick="deleteStudent('${student.Matric}')" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition">
+                <button class="delete-student-btn px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition" data-matric="${student.Matric}">
                   <i class="fas fa-trash"></i> Delete
                 </button>
               </div>
@@ -962,6 +959,72 @@ z<!DOCTYPE html>
         
         searchResultsHTML += `</div>`;
         $('#searchResults').html(searchResultsHTML);
+        
+        // Add event listeners after the HTML is rendered
+        $('.view-student-btn').on('click', async function() {
+          const studentData = JSON.parse($(this).data('student'));
+          await viewStudentDetails(studentData);
+        });
+        
+        $('.edit-student-btn').on('click', async function() {
+          const studentData = JSON.parse($(this).data('student'));
+          await editStudent(studentData);
+        });
+        
+        $('.delete-student-btn').on('click', async function() {
+          const matric = $(this).data('matric');
+          const studentCard = $(this).closest('.student-card');
+          try {
+            // Show confirmation modal
+            $('#confirmationModal').removeClass('hidden');
+            $('#confirmMessage').text(`Are you sure you want to delete student with matric number ${matric}?`);
+            
+            // Handle confirmation
+            $('#confirmDeleteBtn').off('click').on('click', async function() {
+              try {
+                await $.ajax({
+                  url: `/api/v1/admin/students/${matric}`,
+                  method: 'DELETE'
+                });
+                
+                // Close confirmation modal
+                $('#confirmationModal').addClass('hidden');
+                
+                // Remove the student card immediately
+                studentCard.fadeOut(300, function() {
+                  $(this).remove();
+                  
+                  // If this was the last card, show empty state
+                  if ($('.student-card').length === 0) {
+                    $('#searchResults').html(`
+                      <div class="flex flex-col items-center justify-center py-8 bg-gray-50 rounded">
+                        <i class="fas fa-search text-4xl mb-3 text-gray-300"></i>
+                        <p class="text-gray-600">No students found.</p>
+                      </div>
+                    `);
+                  }
+                });
+                
+                // Show success message
+                showStatusMessage('success', 'Student deleted successfully!');
+              } catch (error) {
+                let msg = 'Failed to delete student';
+                if (error.responseJSON && error.responseJSON.detail) {
+                  msg = error.responseJSON.detail;
+                }
+                showStatusMessage('error', msg);
+              }
+            });
+            
+            // Handle cancel
+            $('#cancelDeleteBtn').off('click').on('click', function() {
+              $('#confirmationModal').addClass('hidden');
+            });
+          } catch (error) {
+            console.error('Error in delete confirmation:', error);
+            showStatusMessage('error', 'Error processing delete request');
+          }
+        });
       } catch (error) {
         $('#searchResults').html(`
           <div class="flex flex-col items-center justify-center py-8 bg-red-50 rounded text-red-700">
@@ -975,10 +1038,226 @@ z<!DOCTYPE html>
     /*====================================
           Edit Student Shortcut Function
     ====================================*/
-    function editStudent(student) {
+    async function editStudent(student) {
       // If a student object is passed, extract the matric number
       const matric = typeof student === 'string' ? student : student.Matric;
-      openEditModal(matric);
+      try {
+        // Fetch the latest student data
+        const studentData = await $.ajax({
+          url: `/api/v1/admin/students/${matric}`,
+          method: 'GET'
+        });
+        openEditModal(studentData);
+      } catch (error) {
+        showStatusMessage('error', 'Failed to load student data for editing');
+      }
+    }
+
+    function openEditModal(student) {
+      // Populate the form with student data
+      $('#editStudentMatric').val(student.Matric);
+      $('#editMatric').val(student.Matric);
+      $('#editFirstname').val(student.Firstname);
+      $('#editLastname').val(student.Lastname);
+      $('#editGender').val(student.gender);
+      $('#editCourse').val(student.course);
+      $('#editLevel').val(student.level);
+      $('#editSection').val(student.section);
+      
+      // Handle image preview
+      if (student.image) {
+        $('#editStudentImagePreview').attr('src', student.image).removeClass('hidden');
+        $('#editImageUploadIcon').hide();
+        $('#editRemoveImageBtn').removeClass('hidden');
+      } else {
+        $('#editStudentImagePreview').attr('src', '').addClass('hidden');
+        $('#editImageUploadIcon').show();
+        $('#editRemoveImageBtn').addClass('hidden');
+      }
+      
+      // Show the modal
+      $('#editStudentModal').removeClass('hidden');
+      
+      // Initialize image upload handlers
+      initEditImageUploadHandlers();
+      
+      // Initialize form submission handler
+      initEditFormHandlers();
+    }
+
+    function initEditImageUploadHandlers() {
+      $('#editImageUploadContainer').off('click').on('click', function() {
+        $('#editStudentImage').click();
+      });
+      
+      $('#editStudentImage').off('change').on('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          if (file.size > 10 * 1024 * 1024) {
+            showEditStatusMessage('error', 'Image file size must be less than 10MB');
+            return;
+          }
+          if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+            showEditStatusMessage('error', 'Only JPG, PNG, and GIF images are allowed');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            editUploadedImageData = e.target.result;
+            $('#editStudentImagePreview').attr('src', editUploadedImageData).removeClass('hidden');
+            $('#editImageUploadIcon').hide();
+            $('#editRemoveImageBtn').removeClass('hidden');
+            $('#editStatusMessages').addClass('hidden').empty();
+          };
+          reader.onerror = function() {
+            showEditStatusMessage('error', 'Error reading image file');
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      $('#editRemoveImageBtn').off('click').on('click', function(e) {
+        e.stopPropagation();
+        editUploadedImageData = '';
+        $('#editStudentImagePreview').attr('src', '').addClass('hidden');
+        $('#editImageUploadIcon').show();
+        $('#editRemoveImageBtn').addClass('hidden');
+        $('#editStudentImage').val('');
+      });
+    }
+
+    function initEditFormHandlers() {
+      $('#editStudentForm').off('submit').on('submit', async function(e) {
+        e.preventDefault();
+        await updateStudent();
+      });
+      
+      $('#cancelEditBtn').off('click').on('click', function() {
+        $('#editStudentModal').addClass('hidden');
+        $('#editStatusMessages').addClass('hidden').empty();
+      });
+      
+      $('#closeEditModal').off('click').on('click', function() {
+        $('#editStudentModal').addClass('hidden');
+        $('#editStatusMessages').addClass('hidden').empty();
+      });
+    }
+
+    async function updateStudent() {
+      const matric = $('#editStudentMatric').val();
+      showEditStatusMessage('loading', 'Updating student...');
+      
+      const data = {
+        Matric: $('#editMatric').val().trim(),
+        Firstname: $('#editFirstname').val().trim(),
+        Lastname: $('#editLastname').val().trim(),
+        gender: $('#editGender').val(),
+        course: $('#editCourse').val(),
+        level: $('#editLevel').val(),
+        section: $('#editSection').val().trim(),
+        image: editUploadedImageData || null
+      };
+      
+      try {
+        const updatedStudent = await $.ajax({
+          url: `/api/v1/admin/students/${matric}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(data)
+        });
+        
+        showEditStatusMessage('success', 'Student updated successfully!');
+        setTimeout(() => {
+          $('#editStudentModal').addClass('hidden');
+          loadAllStudents(); // Refresh the student list
+        }, 1000);
+      } catch (error) {
+        let msg = 'Update failed';
+        if (error.responseJSON && error.responseJSON.detail) {
+          msg = error.responseJSON.detail;
+        }
+        showEditStatusMessage('error', msg);
+      }
+    }
+
+    function showEditStatusMessage(type, message) {
+      const statusDiv = $('#editStatusMessages');
+      let icon = '', bgClass = '';
+      switch (type) {
+        case 'loading':
+          icon = '<i class="fas fa-spinner fa-spin mr-2"></i>';
+          bgClass = 'bg-blue-100 text-blue-800';
+          break;
+        case 'success':
+          icon = '<i class="fas fa-check-circle mr-2"></i>';
+          bgClass = 'bg-green-100 text-green-800';
+          break;
+        case 'error':
+          icon = '<i class="fas fa-exclamation-circle mr-2"></i>';
+          bgClass = 'bg-red-100 text-red-800';
+          break;
+        default:
+          icon = '<i class="fas fa-info-circle mr-2"></i>';
+          bgClass = 'bg-gray-100 text-gray-800';
+      }
+      statusDiv.removeClass('hidden').html(`<div class="p-3 rounded ${bgClass}">${icon}${message}</div>`);
+    }
+
+    /*====================================
+              Delete Student Function
+    ====================================*/
+    async function deleteStudent(matric) {
+      const studentCard = $(`button[onclick="deleteStudent('${matric}')"]`).closest('.student-card');
+      try {
+        // Show confirmation modal
+        $('#confirmationModal').removeClass('hidden');
+        $('#confirmMessage').text(`Are you sure you want to delete student with matric number ${matric}?`);
+        
+        // Handle confirmation
+        $('#confirmDeleteBtn').off('click').on('click', async function() {
+          try {
+            await $.ajax({
+              url: `/api/v1/admin/students/${matric}`,
+              method: 'DELETE'
+            });
+            
+            // Close confirmation modal
+            $('#confirmationModal').addClass('hidden');
+            
+            // Remove the student card immediately
+            studentCard.fadeOut(300, function() {
+              $(this).remove();
+              
+              // If this was the last card, show empty state
+              if ($('.student-card').length === 0) {
+                $('#studentList').html(`
+                  <div class="col-span-full text-center py-8">
+                    <i class="fas fa-users text-gray-300 text-5xl mb-3"></i>
+                    <p class="text-gray-500">No students registered yet</p>
+                  </div>
+                `);
+              }
+            });
+            
+            // Show success message
+            showStatusMessage('success', 'Student deleted successfully!');
+          } catch (error) {
+            let msg = 'Failed to delete student';
+            if (error.responseJSON && error.responseJSON.detail) {
+              msg = error.responseJSON.detail;
+            }
+            showStatusMessage('error', msg);
+          }
+        });
+        
+        // Handle cancel
+        $('#cancelDeleteBtn').off('click').on('click', function() {
+          $('#confirmationModal').addClass('hidden');
+        });
+      } catch (error) {
+        console.error('Error in delete confirmation:', error);
+        showStatusMessage('error', 'Error processing delete request');
+      }
     }
 
     /*====================================
